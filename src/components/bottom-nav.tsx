@@ -1,13 +1,15 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Home, MessageCirclePlus, Video, Library, User } from "lucide-react";
+import { Home, MessageCirclePlus, Video, Library, User, type LucideIcon } from "lucide-react";
 
-const tabs = [
+type Tab = { to: "/home" | "/ask" | "/record" | "/library" | "/profile"; icon: LucideIcon; label: string; primary?: boolean };
+
+const tabs: Tab[] = [
   { to: "/home", icon: Home, label: "Home" },
   { to: "/ask", icon: MessageCirclePlus, label: "Ask" },
   { to: "/record", icon: Video, label: "Record", primary: true },
   { to: "/library", icon: Library, label: "Library" },
   { to: "/profile", icon: User, label: "Profile" },
-] as const;
+];
 
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });

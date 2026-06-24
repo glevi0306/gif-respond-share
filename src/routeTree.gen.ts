@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RecordRouteImport } from './routes/record'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LibraryRouteImport } from './routes/library'
@@ -18,6 +19,11 @@ import { Route as AskRouteImport } from './routes/ask'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as QuestionIdRouteImport } from './routes/question/$id'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecordRoute = RecordRouteImport.update({
   id: '/record',
   path: '/record',
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/library': typeof LibraryRoute
   '/profile': typeof ProfileRoute
   '/record': typeof RecordRoute
+  '/settings': typeof SettingsRoute
   '/question/$id': typeof QuestionIdRoute
 }
 export interface FileRoutesByTo {
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/library': typeof LibraryRoute
   '/profile': typeof ProfileRoute
   '/record': typeof RecordRoute
+  '/settings': typeof SettingsRoute
   '/question/$id': typeof QuestionIdRoute
 }
 export interface FileRoutesById {
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/library': typeof LibraryRoute
   '/profile': typeof ProfileRoute
   '/record': typeof RecordRoute
+  '/settings': typeof SettingsRoute
   '/question/$id': typeof QuestionIdRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/profile'
     | '/record'
+    | '/settings'
     | '/question/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/profile'
     | '/record'
+    | '/settings'
     | '/question/$id'
   id:
     | '__root__'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/library'
     | '/profile'
     | '/record'
+    | '/settings'
     | '/question/$id'
   fileRoutesById: FileRoutesById
 }
@@ -131,11 +143,19 @@ export interface RootRouteChildren {
   LibraryRoute: typeof LibraryRoute
   ProfileRoute: typeof ProfileRoute
   RecordRoute: typeof RecordRoute
+  SettingsRoute: typeof SettingsRoute
   QuestionIdRoute: typeof QuestionIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/record': {
       id: '/record'
       path: '/record'
@@ -203,6 +223,7 @@ const rootRouteChildren: RootRouteChildren = {
   LibraryRoute: LibraryRoute,
   ProfileRoute: ProfileRoute,
   RecordRoute: RecordRoute,
+  SettingsRoute: SettingsRoute,
   QuestionIdRoute: QuestionIdRoute,
 }
 export const routeTree = rootRouteImport

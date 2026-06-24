@@ -20,7 +20,7 @@ export function OrangeHeader({
       <div className="flex items-center justify-between gap-3">
         {back ? (
           <Link
-            to={back}
+            to={back as string}
             className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/25"
             aria-label="Back"
           >

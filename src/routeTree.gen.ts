@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RecordRouteImport } from './routes/record'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -20,6 +21,11 @@ import { Route as QuestionIdRouteImport } from './routes/question/$id'
 const RecordRoute = RecordRouteImport.update({
   id: '/record',
   path: '/record',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LibraryRoute = LibraryRouteImport.update({
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/profile': typeof ProfileRoute
   '/record': typeof RecordRoute
   '/question/$id': typeof QuestionIdRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/profile': typeof ProfileRoute
   '/record': typeof RecordRoute
   '/question/$id': typeof QuestionIdRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/home': typeof HomeRoute
   '/library': typeof LibraryRoute
+  '/profile': typeof ProfileRoute
   '/record': typeof RecordRoute
   '/question/$id': typeof QuestionIdRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/home'
     | '/library'
+    | '/profile'
     | '/record'
     | '/question/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/home'
     | '/library'
+    | '/profile'
     | '/record'
     | '/question/$id'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/home'
     | '/library'
+    | '/profile'
     | '/record'
     | '/question/$id'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   HomeRoute: typeof HomeRoute
   LibraryRoute: typeof LibraryRoute
+  ProfileRoute: typeof ProfileRoute
   RecordRoute: typeof RecordRoute
   QuestionIdRoute: typeof QuestionIdRoute
 }
@@ -128,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/record'
       fullPath: '/record'
       preLoaderRoute: typeof RecordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/library': {
@@ -181,6 +201,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   HomeRoute: HomeRoute,
   LibraryRoute: LibraryRoute,
+  ProfileRoute: ProfileRoute,
   RecordRoute: RecordRoute,
   QuestionIdRoute: QuestionIdRoute,
 }

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RecordRouteImport } from './routes/record'
+import { Route as LibraryRouteImport } from './routes/library'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AskRouteImport } from './routes/ask'
@@ -19,6 +20,11 @@ import { Route as QuestionIdRouteImport } from './routes/question/$id'
 const RecordRoute = RecordRouteImport.update({
   id: '/record',
   path: '/record',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/ask': typeof AskRoute
   '/auth': typeof AuthRoute
   '/home': typeof HomeRoute
+  '/library': typeof LibraryRoute
   '/record': typeof RecordRoute
   '/question/$id': typeof QuestionIdRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/ask': typeof AskRoute
   '/auth': typeof AuthRoute
   '/home': typeof HomeRoute
+  '/library': typeof LibraryRoute
   '/record': typeof RecordRoute
   '/question/$id': typeof QuestionIdRoute
 }
@@ -69,20 +77,36 @@ export interface FileRoutesById {
   '/ask': typeof AskRoute
   '/auth': typeof AuthRoute
   '/home': typeof HomeRoute
+  '/library': typeof LibraryRoute
   '/record': typeof RecordRoute
   '/question/$id': typeof QuestionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/ask' | '/auth' | '/home' | '/record' | '/question/$id'
+  fullPaths:
+    | '/'
+    | '/ask'
+    | '/auth'
+    | '/home'
+    | '/library'
+    | '/record'
+    | '/question/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ask' | '/auth' | '/home' | '/record' | '/question/$id'
+  to:
+    | '/'
+    | '/ask'
+    | '/auth'
+    | '/home'
+    | '/library'
+    | '/record'
+    | '/question/$id'
   id:
     | '__root__'
     | '/'
     | '/ask'
     | '/auth'
     | '/home'
+    | '/library'
     | '/record'
     | '/question/$id'
   fileRoutesById: FileRoutesById
@@ -92,6 +116,7 @@ export interface RootRouteChildren {
   AskRoute: typeof AskRoute
   AuthRoute: typeof AuthRoute
   HomeRoute: typeof HomeRoute
+  LibraryRoute: typeof LibraryRoute
   RecordRoute: typeof RecordRoute
   QuestionIdRoute: typeof QuestionIdRoute
 }
@@ -103,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/record'
       fullPath: '/record'
       preLoaderRoute: typeof RecordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -148,6 +180,7 @@ const rootRouteChildren: RootRouteChildren = {
   AskRoute: AskRoute,
   AuthRoute: AuthRoute,
   HomeRoute: HomeRoute,
+  LibraryRoute: LibraryRoute,
   RecordRoute: RecordRoute,
   QuestionIdRoute: QuestionIdRoute,
 }

@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RecordRouteImport } from './routes/record'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AskRouteImport } from './routes/ask'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as QuestionIdRouteImport } from './routes/question/$id'
 
+const RecordRoute = RecordRouteImport.update({
+  id: '/record',
+  path: '/record',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -46,6 +52,7 @@ export interface FileRoutesByFullPath {
   '/ask': typeof AskRoute
   '/auth': typeof AuthRoute
   '/home': typeof HomeRoute
+  '/record': typeof RecordRoute
   '/question/$id': typeof QuestionIdRoute
 }
 export interface FileRoutesByTo {
@@ -53,6 +60,7 @@ export interface FileRoutesByTo {
   '/ask': typeof AskRoute
   '/auth': typeof AuthRoute
   '/home': typeof HomeRoute
+  '/record': typeof RecordRoute
   '/question/$id': typeof QuestionIdRoute
 }
 export interface FileRoutesById {
@@ -61,14 +69,22 @@ export interface FileRoutesById {
   '/ask': typeof AskRoute
   '/auth': typeof AuthRoute
   '/home': typeof HomeRoute
+  '/record': typeof RecordRoute
   '/question/$id': typeof QuestionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/ask' | '/auth' | '/home' | '/question/$id'
+  fullPaths: '/' | '/ask' | '/auth' | '/home' | '/record' | '/question/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/ask' | '/auth' | '/home' | '/question/$id'
-  id: '__root__' | '/' | '/ask' | '/auth' | '/home' | '/question/$id'
+  to: '/' | '/ask' | '/auth' | '/home' | '/record' | '/question/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/ask'
+    | '/auth'
+    | '/home'
+    | '/record'
+    | '/question/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,11 +92,19 @@ export interface RootRouteChildren {
   AskRoute: typeof AskRoute
   AuthRoute: typeof AuthRoute
   HomeRoute: typeof HomeRoute
+  RecordRoute: typeof RecordRoute
   QuestionIdRoute: typeof QuestionIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/record': {
+      id: '/record'
+      path: '/record'
+      fullPath: '/record'
+      preLoaderRoute: typeof RecordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/home': {
       id: '/home'
       path: '/home'
@@ -124,6 +148,7 @@ const rootRouteChildren: RootRouteChildren = {
   AskRoute: AskRoute,
   AuthRoute: AuthRoute,
   HomeRoute: HomeRoute,
+  RecordRoute: RecordRoute,
   QuestionIdRoute: QuestionIdRoute,
 }
 export const routeTree = rootRouteImport

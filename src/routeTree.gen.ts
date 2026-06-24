@@ -9,38 +9,195 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as RecordRouteImport } from './routes/record'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as LibraryRouteImport } from './routes/library'
+import { Route as HomeRouteImport } from './routes/home'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AskRouteImport } from './routes/ask'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as QuestionIdRouteImport } from './routes/question/$id'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecordRoute = RecordRouteImport.update({
+  id: '/record',
+  path: '/record',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AskRoute = AskRouteImport.update({
+  id: '/ask',
+  path: '/ask',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const QuestionIdRoute = QuestionIdRouteImport.update({
+  id: '/question/$id',
+  path: '/question/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ask': typeof AskRoute
+  '/auth': typeof AuthRoute
+  '/home': typeof HomeRoute
+  '/library': typeof LibraryRoute
+  '/profile': typeof ProfileRoute
+  '/record': typeof RecordRoute
+  '/settings': typeof SettingsRoute
+  '/question/$id': typeof QuestionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ask': typeof AskRoute
+  '/auth': typeof AuthRoute
+  '/home': typeof HomeRoute
+  '/library': typeof LibraryRoute
+  '/profile': typeof ProfileRoute
+  '/record': typeof RecordRoute
+  '/settings': typeof SettingsRoute
+  '/question/$id': typeof QuestionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ask': typeof AskRoute
+  '/auth': typeof AuthRoute
+  '/home': typeof HomeRoute
+  '/library': typeof LibraryRoute
+  '/profile': typeof ProfileRoute
+  '/record': typeof RecordRoute
+  '/settings': typeof SettingsRoute
+  '/question/$id': typeof QuestionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/ask'
+    | '/auth'
+    | '/home'
+    | '/library'
+    | '/profile'
+    | '/record'
+    | '/settings'
+    | '/question/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/ask'
+    | '/auth'
+    | '/home'
+    | '/library'
+    | '/profile'
+    | '/record'
+    | '/settings'
+    | '/question/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/ask'
+    | '/auth'
+    | '/home'
+    | '/library'
+    | '/profile'
+    | '/record'
+    | '/settings'
+    | '/question/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AskRoute: typeof AskRoute
+  AuthRoute: typeof AuthRoute
+  HomeRoute: typeof HomeRoute
+  LibraryRoute: typeof LibraryRoute
+  ProfileRoute: typeof ProfileRoute
+  RecordRoute: typeof RecordRoute
+  SettingsRoute: typeof SettingsRoute
+  QuestionIdRoute: typeof QuestionIdRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/record': {
+      id: '/record'
+      path: '/record'
+      fullPath: '/record'
+      preLoaderRoute: typeof RecordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ask': {
+      id: '/ask'
+      path: '/ask'
+      fullPath: '/ask'
+      preLoaderRoute: typeof AskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +205,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/question/$id': {
+      id: '/question/$id'
+      path: '/question/$id'
+      fullPath: '/question/$id'
+      preLoaderRoute: typeof QuestionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AskRoute: AskRoute,
+  AuthRoute: AuthRoute,
+  HomeRoute: HomeRoute,
+  LibraryRoute: LibraryRoute,
+  ProfileRoute: ProfileRoute,
+  RecordRoute: RecordRoute,
+  SettingsRoute: SettingsRoute,
+  QuestionIdRoute: QuestionIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

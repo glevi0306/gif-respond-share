@@ -6,12 +6,16 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  useNavigate,
+  useRouterState,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { AppProvider } from "../lib/app-context";
+import { AppProvider, useApp } from "../lib/app-context";
+import { AuthProvider, useAuth } from "../lib/auth-context";
+import type { Language } from "../lib/sec-data";
 
 function NotFoundComponent() {
   return (
@@ -97,11 +101,53 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <AppProvider>
-        <div className="mx-auto min-h-screen w-full max-w-md bg-background">
-          <Outlet />
-        </div>
-      </AppProvider>
+      <AuthProvider>
+        <AppProvider>
+          <AppShell />
+        </AppProvider>
+      </AuthProvider>
     </QueryClientProvider>
+  );
+}
+
+// AppShell consumes both AuthProvider and AppProvider.
+// It handles the global loading state, language sync, and route guard.
+function AppShell() {
+  const { session, profile, loading } = useAuth();
+  const { setLanguage } = useApp();
+  const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  // Sync the user's preferred language from their Supabase profile
+  useEffect(() => {
+    if (profile?.language) {
+      setLanguage(profile.language as Language);
+    }
+  }, [profile?.language, setLanguage]);
+
+  // Route guard: redirect unauthenticated users to /auth, and
+  // redirect authenticated users away from /auth to /home
+  useEffect(() => {
+    if (loading) return;
+    const onAuthPage = pathname === "/auth";
+    if (!session && !onAuthPage) {
+      navigate({ to: "/auth" });
+    } else if (session && onAuthPage) {
+      navigate({ to: "/home" });
+    }
+  }, [session, loading, pathname, navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-[var(--orange)]" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto min-h-screen w-full max-w-md bg-background">
+      <Outlet />
+    </div>
   );
 }

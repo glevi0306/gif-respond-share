@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 import { OrangeHeader } from "../components/orange-header";
 import { BottomNav } from "../components/bottom-nav";
 import { useApp } from "../lib/app-context";
+import { useAuth } from "../lib/auth-context";
 import { LANGUAGES, PROFILE, GIFS } from "../lib/sec-data";
 import {
   User, Palette, Globe, Bell, Lock, HardDrive, LifeBuoy,
@@ -16,11 +17,25 @@ export const Route = createFileRoute("/settings")({
 
 function SettingsPage() {
   const { theme, setTheme, language, setLanguage } = useApp();
+  const { signOut } = useAuth();
   const navigate = useNavigate();
   const [notif, setNotif] = useState({ newQ: true, newA: true, friend: true, weekly: false, results: true });
   const [profileVis, setProfileVis] = useState<"public" | "friends">("friends");
   const [libVis, setLibVis] = useState<"public" | "friends" | "private">("friends");
   const [gifDefault, setGifDefault] = useState<"public" | "friends" | "private">("friends");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleLogout = async () => {
+    await signOut();
+    // AppShell route guard will redirect to /auth once session clears
+  };
+
+  // Placeholder: real deletion requires a server-side Edge Function with service-role key.
+  // For now we sign the user out so they cannot access their data.
+  const handleDeleteAccount = async () => {
+    await signOut();
+    navigate({ to: "/auth" });
+  };
 
   const totalSizeMb = (GIFS.length * 1.4).toFixed(1);
   const avgSizeKb = "180";
@@ -35,8 +50,30 @@ function SettingsPage() {
           <Row label="Username" value={`@${PROFILE.username}`} />
           <Row label="Bio" value={PROFILE.bio} />
           <Row label="Email" value={PROFILE.email} icon={<Mail className="h-4 w-4" />} />
-          <Action onClick={() => navigate({ to: "/auth" })} icon={<LogOut className="h-4 w-4" />} label="Log out" />
-          <Action danger icon={<Trash2 className="h-4 w-4" />} label="Delete account" />
+          <Action onClick={handleLogout} icon={<LogOut className="h-4 w-4" />} label="Log out" />
+          {!showDeleteConfirm ? (
+            <Action danger icon={<Trash2 className="h-4 w-4" />} label="Delete account" onClick={() => setShowDeleteConfirm(true)} />
+          ) : (
+            <div className="px-4 py-3">
+              <p className="mb-3 text-sm text-red-500">
+                This will sign you out immediately. Contact support to fully remove your data.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 rounded-full border border-border py-2 text-xs font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  className="flex-1 rounded-full bg-red-500 py-2 text-xs font-semibold text-white"
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          )}
         </Section>
 
         <Section icon={<Palette className="h-4 w-4" />} title="Appearance" emoji="🎨">

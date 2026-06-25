@@ -103,7 +103,10 @@ function RecordPage() {
       await new Promise((r) => setTimeout(r, 0));
     }
     gif.finish();
-    const blob = new Blob([gif.bytes()], { type: "image/gif" });
+    const bytes = gif.bytes();
+    const buf = new ArrayBuffer(bytes.byteLength);
+    new Uint8Array(buf).set(bytes);
+    const blob = new Blob([buf], { type: "image/gif" });
     const url = URL.createObjectURL(blob);
     setGifUrl(url);
     framesRef.current = [];

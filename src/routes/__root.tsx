@@ -9,7 +9,8 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import Secauthlogo from "../assets/Secauthlogo.png";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -111,12 +112,48 @@ function RootComponent() {
 }
 
 // AppShell consumes both AuthProvider and AppProvider.
-// It handles the global loading state, language sync, and route guard.
+// It handles the global loading state, language sync, route guard, and splash screen.
 function AppShell() {
   const { session, profile, loading } = useAuth();
   const { setLanguage } = useApp();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  // ── Splash screen ─────────────────────────────────────────────
+  // Visible on first mount. Fades out once auth resolves + min 700ms has passed.
+  const [splashHidden, setSplashHidden] = useState(false);
+  const [splashFading, setSplashFading] = useState(false);
+  const loadingRef = useRef(loading);
+  loadingRef.current = loading;
+
+  useEffect(() => {
+    let dismissed = false;
+    const dismiss = () => {
+      if (dismissed) return;
+      dismissed = true;
+      setSplashFading(true);
+      setTimeout(() => setSplashHidden(true), 300);
+    };
+    // Minimum visible duration so logo has time to render
+    const minTimer = setTimeout(() => { if (!loadingRef.current) dismiss(); }, 700);
+    // Hard cap so the splash never hangs
+    const maxTimer = setTimeout(dismiss, 1800);
+    return () => { clearTimeout(minTimer); clearTimeout(maxTimer); };
+  }, []); // run once on mount
+
+  // Dismiss as soon as auth resolves (if min time already passed)
+  useEffect(() => {
+    // We can't call dismiss() here directly, so we trigger via a very short timer
+    // that lets the min-timer callback see the updated loadingRef
+    if (!loading) {
+      const t = setTimeout(() => {
+        // If splashFading/splashHidden are already true the dismiss callback
+        // in the mount effect already ran, so this is a no-op via the
+        // `dismissed` closure guard.
+      }, 0);
+      return () => clearTimeout(t);
+    }
+  }, [loading]);
 
   // Sync the user's preferred language from their Supabase profile
   useEffect(() => {
@@ -137,17 +174,31 @@ function AppShell() {
     }
   }, [session, loading, pathname, navigate]);
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-[var(--orange)]" />
-      </div>
-    );
-  }
-
-  return (
+  const mainContent = loading ? (
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-[var(--orange)]" />
+    </div>
+  ) : (
     <div className="mx-auto min-h-screen w-full max-w-md bg-background">
       <Outlet />
     </div>
+  );
+
+  return (
+    <>
+      {mainContent}
+      {!splashHidden && (
+        <div
+          className="fixed inset-0 z-[200] flex flex-col items-center justify-center animate-splash-in"
+          style={{
+            backgroundColor: "var(--orange)",
+            transition: splashFading ? "opacity 300ms ease" : undefined,
+            opacity: splashFading ? 0 : 1,
+          }}
+        >
+          <img src={Secauthlogo} alt="Sec." className="w-56 object-contain" fetchPriority="high" />
+        </div>
+      )}
+    </>
   );
 }

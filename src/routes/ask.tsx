@@ -1,23 +1,68 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Search, Send } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { OrangeHeader } from "../components/orange-header";
 import { BottomNav } from "../components/bottom-nav";
-import { FRIENDS, QUESTION_SUGGESTIONS } from "../lib/sec-data";
+import { supabase } from "../lib/supabase";
+import { useAuth } from "../lib/auth-context";
+import { useSendQuestion } from "../hooks/use-questions";
+import { QUESTION_SUGGESTIONS } from "../lib/sec-data";
 
 export const Route = createFileRoute("/ask")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    to: search.to as string | undefined,
+  }),
   head: () => ({ meta: [{ title: "Ask — Sec." }] }),
   component: AskPage,
 });
 
-function AskPage() {
-  const [query, setQuery] = useState("");
-  const [friendId, setFriendId] = useState<string | null>(null);
-  const [text, setText] = useState("");
-  const navigate = useNavigate();
+type SearchProfile = { id: string; username: string; avatar_emoji: string };
 
-  const filtered = FRIENDS.filter((f) => f.username.toLowerCase().includes(query.toLowerCase()));
-  const canSend = friendId && text.trim().length > 0;
+function AskPage() {
+  const { to } = Route.useSearch();
+  const [query, setQuery] = useState("");
+  const [friendId, setFriendId] = useState<string | null>(to ?? null);
+  const [text, setText] = useState("");
+  const [sendError, setSendError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const sendQuestion = useSendQuestion();
+
+  // Fetch all profiles once (excluding self); filter client-side by search query
+  const { data: allProfiles = [] } = useQuery({
+    queryKey: ["profiles", "all", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, username, avatar_emoji")
+        .neq("id", user!.id)
+        .order("username")
+        .limit(100);
+      if (error) throw error;
+      return (data ?? []) as SearchProfile[];
+    },
+    enabled: !!user,
+  });
+
+  const filtered = query.trim()
+    ? allProfiles.filter((p) =>
+        p.username.toLowerCase().includes(query.toLowerCase()),
+      )
+    : allProfiles;
+
+  const canSend = !!friendId && text.trim().length > 0 && !sendQuestion.isPending;
+
+  const handleSend = async () => {
+    if (!friendId || !text.trim()) return;
+    setSendError(null);
+    try {
+      await sendQuestion.mutateAsync({ toId: friendId, text: text.trim() });
+      navigate({ to: "/home" });
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Failed to send question.");
+    }
+  };
 
   return (
     <div className="pb-28">
@@ -41,7 +86,7 @@ function AskPage() {
               }`}
             >
               <div className={`grid h-14 w-14 place-items-center rounded-full bg-card text-2xl ${friendId === f.id ? "ring-2 ring-[var(--orange)]" : "ring-1 ring-border"}`}>
-                {f.avatar}
+                {f.avatar_emoji}
               </div>
               <p className="truncate text-[11px] font-medium">{f.username}</p>
             </button>
@@ -69,12 +114,19 @@ function AskPage() {
           </div>
         </div>
 
+        {sendError && (
+          <p className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
+            {sendError}
+          </p>
+        )}
+
         <button
           disabled={!canSend}
-          onClick={() => navigate({ to: "/home" })}
+          onClick={handleSend}
           className="btn-black mt-6 flex w-full items-center justify-center gap-2 disabled:opacity-40"
         >
-          <Send className="h-4 w-4" /> Send question
+          <Send className="h-4 w-4" />
+          {sendQuestion.isPending ? "Sending…" : "Send question"}
         </button>
       </div>
 

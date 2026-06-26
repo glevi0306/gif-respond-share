@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Apple, Chrome } from "lucide-react";
 import { LANGUAGES, type Language } from "../lib/sec-data";
 import { supabase } from "../lib/supabase";
+import Secauthlogo from "../assets/Secauthlogo.png";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Sign in — Sec." }] }),
@@ -77,8 +78,11 @@ function AuthPage() {
     return (
       <div className="min-h-screen pb-10">
         <div className="orange-header pb-10 pt-12 text-center">
-          <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-3xl bg-black text-3xl font-black text-white">S.</div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">Sec.</h1>
+          <img
+            src={Secauthlogo}
+            alt="Sec."
+            className="mx-auto mb-5 w-72 object-contain"
+          />
           <p className="mt-1 text-sm text-white/85">Ask anything. Answer with a GIF.</p>
         </div>
         <div className="px-5 pt-8 text-center">
@@ -102,8 +106,11 @@ function AuthPage() {
   return (
     <div className="min-h-screen pb-10">
       <div className="orange-header pb-10 pt-12 text-center">
-        <div className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-3xl bg-black text-3xl font-black text-white">S.</div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white">Sec.</h1>
+        <img
+          src={Secauthlogo}
+          alt="Sec."
+          className="mx-auto mb-5 w-72 object-contain"
+        />
         <p className="mt-1 text-sm text-white/85">Ask anything. Answer with a GIF.</p>
       </div>
 

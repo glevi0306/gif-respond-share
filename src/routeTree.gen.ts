@@ -18,6 +18,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AskRouteImport } from './routes/ask'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as QuestionIdRouteImport } from './routes/question/$id'
+import { Route as ConversationUserIdRouteImport } from './routes/conversation/$userId'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -64,6 +65,11 @@ const QuestionIdRoute = QuestionIdRouteImport.update({
   path: '/question/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ConversationUserIdRoute = ConversationUserIdRouteImport.update({
+  id: '/conversation/$userId',
+  path: '/conversation/$userId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/record': typeof RecordRoute
   '/settings': typeof SettingsRoute
+  '/conversation/$userId': typeof ConversationUserIdRoute
   '/question/$id': typeof QuestionIdRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/record': typeof RecordRoute
   '/settings': typeof SettingsRoute
+  '/conversation/$userId': typeof ConversationUserIdRoute
   '/question/$id': typeof QuestionIdRoute
 }
 export interface FileRoutesById {
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/record': typeof RecordRoute
   '/settings': typeof SettingsRoute
+  '/conversation/$userId': typeof ConversationUserIdRoute
   '/question/$id': typeof QuestionIdRoute
 }
 export interface FileRouteTypes {
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/record'
     | '/settings'
+    | '/conversation/$userId'
     | '/question/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/record'
     | '/settings'
+    | '/conversation/$userId'
     | '/question/$id'
   id:
     | '__root__'
@@ -132,6 +143,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/record'
     | '/settings'
+    | '/conversation/$userId'
     | '/question/$id'
   fileRoutesById: FileRoutesById
 }
@@ -144,6 +156,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   RecordRoute: typeof RecordRoute
   SettingsRoute: typeof SettingsRoute
+  ConversationUserIdRoute: typeof ConversationUserIdRoute
   QuestionIdRoute: typeof QuestionIdRoute
 }
 
@@ -212,6 +225,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QuestionIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/conversation/$userId': {
+      id: '/conversation/$userId'
+      path: '/conversation/$userId'
+      fullPath: '/conversation/$userId'
+      preLoaderRoute: typeof ConversationUserIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -224,6 +244,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   RecordRoute: RecordRoute,
   SettingsRoute: SettingsRoute,
+  ConversationUserIdRoute: ConversationUserIdRoute,
   QuestionIdRoute: QuestionIdRoute,
 }
 export const routeTree = rootRouteImport

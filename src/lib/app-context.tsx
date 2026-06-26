@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Language } from "./sec-data";
 
 type Theme = "light" | "dark" | "system";
@@ -12,16 +12,17 @@ type AppCtx = {
 
 const Ctx = createContext<AppCtx | null>(null);
 
-export function AppProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("light");
-  const [language, setLanguage] = useState<Language>("en");
+function readStorage<T extends string>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  return (localStorage.getItem(key) as T | null) ?? fallback;
+}
 
-  useEffect(() => {
-    const saved = (typeof window !== "undefined" && localStorage.getItem("sec.theme")) as Theme | null;
-    const savedLang = (typeof window !== "undefined" && localStorage.getItem("sec.lang")) as Language | null;
-    if (saved) setTheme(saved);
-    if (savedLang) setLanguage(savedLang);
-  }, []);
+export function AppProvider({ children }: { children: ReactNode }) {
+  // Read from localStorage synchronously so the first render has the correct value
+  // and avoids the default → stored-value re-render flash.
+  const [theme, setTheme] = useState<Theme>(() => readStorage<Theme>("sec.theme", "light"));
+  const [language, setLanguage] = useState<Language>(() => readStorage<Language>("sec.lang", "en"));
+  const isFirstThemeRender = useRef(true);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -32,6 +33,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     apply(theme);
     localStorage.setItem("sec.theme", theme);
+
+    // Skip the transition animation on the very first mount — only animate
+    // when the user manually switches themes to avoid slowing down first paint.
+    if (isFirstThemeRender.current) {
+      isFirstThemeRender.current = false;
+      return;
+    }
+    root.classList.add("theme-transition");
+    const timer = setTimeout(() => root.classList.remove("theme-transition"), 300);
+    return () => clearTimeout(timer);
   }, [theme]);
 
   useEffect(() => {

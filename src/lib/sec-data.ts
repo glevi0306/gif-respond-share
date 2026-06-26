@@ -54,13 +54,13 @@ export const RECENT_ANSWERS = [
 ];
 
 export const GIF_CATEGORIES = [
-  { key: "funny", label: "Funny", emoji: "😂" },
-  { key: "yes", label: "Yes", emoji: "✅" },
-  { key: "no", label: "No", emoji: "❌" },
+  { key: "funny",       label: "Funny",       emoji: "😂" },
+  { key: "yes",         label: "Yes",         emoji: "👍" },
+  { key: "no",          label: "No",          emoji: "👎" },
   { key: "celebration", label: "Celebration", emoji: "🎉" },
-  { key: "wtf", label: "WTF", emoji: "🤯" },
-  { key: "tired", label: "Tired", emoji: "🥱" },
-  { key: "other", label: "Other", emoji: "✨" },
+  { key: "wtf",         label: "WTF",         emoji: "😳" },
+  { key: "tired",       label: "Tired",       emoji: "😴" },
+  { key: "other",       label: "Other",       emoji: "✨" },
 ] as const;
 
 export type GifItem = { id: string; emoji: string; category: string; date: string };

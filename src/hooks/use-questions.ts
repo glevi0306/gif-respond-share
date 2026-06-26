@@ -8,6 +8,7 @@ export type QuestionSender = {
   id: string;
   username: string;
   avatar_emoji: string;
+  avatar_url?: string | null;
 };
 
 export type QuestionRow = {
@@ -45,7 +46,7 @@ export function useReceivedQuestions() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("questions")
-        .select("*, sender:profiles!from_id(id, username, avatar_emoji)")
+        .select("*, sender:profiles!from_id(id, username, avatar_emoji, avatar_url)")
         .eq("to_id", user!.id)
         .eq("status", "waiting")
         .order("created_at", { ascending: false });
@@ -69,7 +70,7 @@ export function useQuestion(
     queryFn: async () => {
       const { data, error } = await supabase
         .from("questions")
-        .select("*, sender:profiles!from_id(id, username, avatar_emoji)")
+        .select("*, sender:profiles!from_id(id, username, avatar_emoji, avatar_url)")
         .eq("id", id)
         .single();
       if (error) throw error;
@@ -107,10 +108,11 @@ export type ConvAnswer = {
   responder_id: string;
 };
 
-// An emoji reaction on a GIF answer
+// An emoji reaction on a GIF (answer or direct GIF — exactly one target is set)
 export type ReactionRow = {
   id: string;
-  answer_id: string;
+  answer_id: string | null;
+  direct_gif_id: string | null;
   user_id: string;
   emoji: string;
 };
@@ -137,8 +139,8 @@ export function useChats() {
         .from("questions")
         .select(
           "id, from_id, to_id, text, status, created_at, " +
-          "sender:profiles!from_id(id, username, avatar_emoji), " +
-          "receiver:profiles!to_id(id, username, avatar_emoji)"
+          "sender:profiles!from_id(id, username, avatar_emoji, avatar_url), " +
+          "receiver:profiles!to_id(id, username, avatar_emoji, avatar_url)"
         )
         .or(`from_id.eq.${user!.id},to_id.eq.${user!.id}`)
         .order("created_at", { ascending: false })
@@ -199,8 +201,8 @@ export function useConversation(partnerId: string) {
         .from("questions")
         .select(
           "*, " +
-          "sender:profiles!from_id(id, username, avatar_emoji), " +
-          "receiver:profiles!to_id(id, username, avatar_emoji)"
+          "sender:profiles!from_id(id, username, avatar_emoji, avatar_url), " +
+          "receiver:profiles!to_id(id, username, avatar_emoji, avatar_url)"
         )
         .in("from_id", [user!.id, partnerId])
         .in("to_id", [user!.id, partnerId])
@@ -239,33 +241,59 @@ export function useAnswersForConversation(partnerId: string) {
 }
 
 // Reactions for a conversation — two-step query avoids PostgREST embed RLS issues.
-// Returns a map: answer_id → ReactionRow
+// Returns { byAnswerId, byDirectGifId } maps for O(1) lookup in the thread render.
 export function useReactionsForConversation(partnerId: string) {
   const { user } = useAuth();
   return useQuery({
     queryKey: ["conv-reactions", user?.id, partnerId],
     queryFn: async () => {
-      // Step 1: collect answer IDs for this conversation
+      const byAnswerId: Record<string, ReactionRow> = {};
+      const byDirectGifId: Record<string, ReactionRow> = {};
+
+      // Step 1a: collect answer IDs for this conversation
       const { data: answers, error: aErr } = await supabase
         .from("answers")
         .select("id")
         .in("responder_id", [user!.id, partnerId]);
       if (aErr) throw aErr;
-      const ids = (answers ?? []).map((a: { id: string }) => a.id);
-      if (ids.length === 0) return {} as Record<string, ReactionRow>;
+      const answerIds = (answers ?? []).map((a: { id: string }) => a.id);
 
-      // Step 2: fetch reactions for those answer IDs
-      const { data, error } = await supabase
-        .from("reactions")
-        .select("id, answer_id, user_id, emoji")
-        .in("answer_id", ids);
-      if (error) throw error;
+      // Step 1b: collect direct_gif IDs for this conversation
+      const { data: directGifsData, error: dgErr } = await supabase
+        .from("direct_gifs")
+        .select("id")
+        .or(
+          `and(sender_id.eq.${user!.id},receiver_id.eq.${partnerId}),` +
+          `and(sender_id.eq.${partnerId},receiver_id.eq.${user!.id})`
+        );
+      if (dgErr) throw dgErr;
+      const directGifIds = (directGifsData ?? []).map((d: { id: string }) => d.id);
 
-      const map: Record<string, ReactionRow> = {};
-      for (const r of (data ?? []) as ReactionRow[]) {
-        map[r.answer_id] = r;
+      // Step 2a: fetch reactions for answer IDs
+      if (answerIds.length > 0) {
+        const { data, error } = await supabase
+          .from("reactions")
+          .select("id, answer_id, direct_gif_id, user_id, emoji")
+          .in("answer_id", answerIds);
+        if (error) throw error;
+        for (const r of (data ?? []) as ReactionRow[]) {
+          if (r.answer_id) byAnswerId[r.answer_id] = r;
+        }
       }
-      return map;
+
+      // Step 2b: fetch reactions for direct GIF IDs
+      if (directGifIds.length > 0) {
+        const { data, error } = await supabase
+          .from("reactions")
+          .select("id, answer_id, direct_gif_id, user_id, emoji")
+          .in("direct_gif_id", directGifIds);
+        if (error) throw error;
+        for (const r of (data ?? []) as ReactionRow[]) {
+          if (r.direct_gif_id) byDirectGifId[r.direct_gif_id] = r;
+        }
+      }
+
+      return { byAnswerId, byDirectGifId };
     },
     enabled: !!user && !!partnerId,
     staleTime: 0,
@@ -275,18 +303,30 @@ export function useReactionsForConversation(partnerId: string) {
 
 // ── Mutations ────────────────────────────────────────────────
 
-// Upsert an emoji reaction on an answer (replaces previous reaction by same user)
+type ReactionTarget =
+  | { answerId: string; directGifId?: never }
+  | { directGifId: string; answerId?: never };
+
+// Upsert an emoji reaction on an answer or direct GIF (one reaction per user per target)
 export function useUpsertReaction() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ answerId, emoji }: { answerId: string; emoji: string }) => {
-      const { error } = await supabase
-        .from("reactions")
-        .upsert(
-          { answer_id: answerId, user_id: user!.id, emoji },
-          { onConflict: "answer_id,user_id" }
-        );
+    mutationFn: async (args: ReactionTarget & { emoji: string }) => {
+      // Delete existing reaction first (partial unique indexes make direct upsert tricky)
+      if (args.answerId) {
+        await supabase.from("reactions").delete()
+          .eq("answer_id", args.answerId).eq("user_id", user!.id);
+      } else {
+        await supabase.from("reactions").delete()
+          .eq("direct_gif_id", args.directGifId!).eq("user_id", user!.id);
+      }
+      const { error } = await supabase.from("reactions").insert({
+        answer_id: args.answerId ?? null,
+        direct_gif_id: args.directGifId ?? null,
+        user_id: user!.id,
+        emoji: args.emoji,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -295,17 +335,17 @@ export function useUpsertReaction() {
   });
 }
 
-// Remove the current user's reaction on an answer
+// Remove the current user's reaction from an answer or direct GIF
 export function useRemoveReaction() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ answerId }: { answerId: string }) => {
-      const { error } = await supabase
-        .from("reactions")
-        .delete()
-        .eq("answer_id", answerId)
-        .eq("user_id", user!.id);
+    mutationFn: async (args: ReactionTarget) => {
+      const { error } = args.answerId
+        ? await supabase.from("reactions").delete()
+            .eq("answer_id", args.answerId).eq("user_id", user!.id)
+        : await supabase.from("reactions").delete()
+            .eq("direct_gif_id", args.directGifId!).eq("user_id", user!.id);
       if (error) throw error;
     },
     onSuccess: () => {

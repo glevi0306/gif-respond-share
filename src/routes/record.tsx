@@ -8,6 +8,7 @@ import { BottomSheet } from "../components/bottom-sheet";
 import { Camera, CheckCircle2, RotateCcw, Send, SwitchCamera, AlertCircle } from "lucide-react";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth-context";
+import { UserAvatar } from "../components/user-avatar";
 
 export const Route = createFileRoute("/record")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -18,28 +19,39 @@ export const Route = createFileRoute("/record")({
 });
 
 // ── Phase state machine ───────────────────────────────────────
-// idle → countdown → recording → encoding → preview → uploading → done
-type Phase = "idle" | "countdown" | "recording" | "encoding" | "preview" | "uploading" | "done";
+// idle → recording → encoding → preview → uploading → done
+type Phase = "idle" | "recording" | "encoding" | "preview" | "uploading" | "done";
 
 const DURATION_MS = 5000;
+const MIN_DURATION_MS = 1000;
 const FPS = 12;
 const GIF_WIDTH = 360;
 const FRAME_INTERVAL = Math.round(1000 / FPS);
 const TOTAL_FRAMES = Math.round((DURATION_MS / 1000) * FPS);
+// Hold threshold: if user releases before this ms, it's a tap (recording continues until second tap)
+const HOLD_THRESHOLD_MS = 350;
 
-type ProfileRow = { id: string; username: string; avatar_emoji: string };
+// SVG border constants
+const BORDER_STROKE = 2.5;
+const BORDER_RX = 28; // matches rounded-3xl
+
+type ProfileRow = { id: string; username: string; avatar_emoji: string; avatar_url?: string | null };
 
 function RecordPage() {
   const { questionId } = Route.useSearch();
 
   // ── Recording state ───────────────────────────────────────
   const [phase, setPhase] = useState<Phase>("idle");
-  const [countdownNum, setCountdownNum] = useState(3);
   const [progress, setProgress] = useState(0);
   const [encodeProgress, setEncodeProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [minDurationError, setMinDurationError] = useState<string | null>(null);
   const [gifUrl, setGifUrl] = useState<string | null>(null);
   const [facing, setFacing] = useState<"user" | "environment">("user");
+
+  // ── Border animation state ────────────────────────────────
+  const [borderVisible, setBorderVisible] = useState(false);
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
 
   // ── Save / Send state ─────────────────────────────────────
   const [isSaved, setIsSaved] = useState(false);
@@ -48,7 +60,7 @@ function RecordPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [showSendSheet, setShowSendSheet] = useState(false);
 
-  // ── Refs ──────────────────────────────────────────────────
+  // ── Refs (existing) ───────────────────────────────────────
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const captureTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -58,7 +70,14 @@ function RecordPage() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const gifBlobRef = useRef<Blob | null>(null);
   const uploadingRef = useRef(false);
-  const countdownCancelledRef = useRef(false);
+
+  // ── Interaction refs ──────────────────────────────────────
+  const cameraContainerRef = useRef<HTMLDivElement | null>(null);
+  const pointerDownAtRef = useRef<number | null>(null);
+  const tapModeActiveRef = useRef(false);
+  const recordingStartedAtRef = useRef(0);
+  // Prevents double-stop when both pointerup and auto-timeout fire close together
+  const stoppingRef = useRef(false);
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -70,7 +89,7 @@ function RecordPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, avatar_emoji")
+        .select("id, username, avatar_emoji, avatar_url")
         .neq("id", user!.id)
         .order("username")
         .limit(100);
@@ -80,7 +99,18 @@ function RecordPage() {
     enabled: !!user && !questionId && showSendSheet,
   });
 
-  // ── Camera helpers (unchanged) ────────────────────────────
+  // ── Measure camera container for SVG border ───────────────
+  useEffect(() => {
+    const el = cameraContainerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setContainerSize({ w: entry.contentRect.width, h: entry.contentRect.height });
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // ── Camera helpers ────────────────────────────────────────
 
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((t) => t.stop());
@@ -157,9 +187,13 @@ function RecordPage() {
     setPhase("preview");
   };
 
-  // ── Recording start ───────────────────────────────────────
+  // ── Start recording (no countdown) ───────────────────────
 
-  const start = async () => {
+  const startRecordingDirectly = async () => {
+    stoppingRef.current = false;
+    tapModeActiveRef.current = false;
+    setMinDurationError(null);
+
     if (!streamRef.current || !videoRef.current) {
       await startCamera();
       if (!streamRef.current) return;
@@ -182,21 +216,12 @@ function RecordPage() {
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (!ctx) { setError("Canvas not available."); return; }
 
-    // 3-second countdown before recording begins
-    countdownCancelledRef.current = false;
-    setCountdownNum(3);
-    setPhase("countdown");
-    for (let i = 2; i >= 1; i--) {
-      await new Promise((r) => setTimeout(r, 1000));
-      if (countdownCancelledRef.current) return;
-      setCountdownNum(i);
-    }
-    await new Promise((r) => setTimeout(r, 1000));
-    if (countdownCancelledRef.current) return;
-
     framesRef.current = [];
+    recordingStartedAtRef.current = Date.now();
     setPhase("recording");
+    setBorderVisible(true);
     setProgress(0);
+
     const startedAt = performance.now();
     captureTimerRef.current = setInterval(() => {
       if (framesRef.current.length >= TOTAL_FRAMES) return;
@@ -212,16 +237,89 @@ function RecordPage() {
       const p = Math.min(1, (performance.now() - startedAt) / DURATION_MS);
       setProgress(p);
     }, 50);
+    // Auto-stop at max duration
     stopTimeoutRef.current = setTimeout(() => {
-      clearTimers(); setProgress(1); void encodeGif();
+      if (stoppingRef.current) return;
+      stoppingRef.current = true;
+      clearTimers();
+      setBorderVisible(false);
+      setProgress(1);
+      tapModeActiveRef.current = false;
+      pointerDownAtRef.current = null;
+      void encodeGif();
     }, DURATION_MS);
   };
 
-  // ── Retake (unchanged) ────────────────────────────────────
+  // ── Stop recording early (with min-duration check) ────────
+
+  const stopRecordingEarly = () => {
+    if (stoppingRef.current) return;
+    stoppingRef.current = true;
+    const elapsed = Date.now() - recordingStartedAtRef.current;
+    clearTimers();
+    setBorderVisible(false);
+    tapModeActiveRef.current = false;
+    pointerDownAtRef.current = null;
+
+    if (elapsed < MIN_DURATION_MS) {
+      framesRef.current = [];
+      setPhase("idle");
+      setProgress(0);
+      setMinDurationError("Record at least 1 second.");
+      stoppingRef.current = false;
+      return;
+    }
+    void encodeGif();
+  };
+
+  // ── Button pointer handlers ───────────────────────────────
+
+  const handleButtonPointerDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    if (phase === "idle" && !error) {
+      pointerDownAtRef.current = Date.now();
+      void startRecordingDirectly();
+    } else if (phase === "recording" && tapModeActiveRef.current) {
+      // Second tap in tap mode → stop
+      stopRecordingEarly();
+    }
+  };
+
+  const handleButtonPointerUp = (e: React.PointerEvent) => {
+    e.preventDefault();
+    if (phase !== "recording") {
+      pointerDownAtRef.current = null;
+      return;
+    }
+    const downAt = pointerDownAtRef.current;
+    pointerDownAtRef.current = null;
+    if (downAt === null || stoppingRef.current) return;
+
+    const held = Date.now() - downAt;
+    if (held >= HOLD_THRESHOLD_MS) {
+      // Hold mode: release → stop
+      stopRecordingEarly();
+    } else {
+      // Tap mode: quick release, wait for second tap
+      tapModeActiveRef.current = true;
+    }
+  };
+
+  const handleButtonPointerLeave = () => {
+    // If user drags off the button while holding, treat as release in hold mode
+    if (phase === "recording" && pointerDownAtRef.current !== null && !tapModeActiveRef.current) {
+      stopRecordingEarly();
+    }
+  };
+
+  // ── Retake ────────────────────────────────────────────────
 
   const reset = async () => {
-    countdownCancelledRef.current = true;
     clearTimers();
+    setBorderVisible(false);
+    stoppingRef.current = false;
+    tapModeActiveRef.current = false;
+    pointerDownAtRef.current = null;
     if (gifUrl) URL.revokeObjectURL(gifUrl);
     gifBlobRef.current = null;
     uploadingRef.current = false;
@@ -231,13 +329,14 @@ function RecordPage() {
     setEncodeProgress(0);
     setUploadError(null);
     setSaveError(null);
+    setMinDurationError(null);
     setIsSaved(false);
     setShowSendSheet(false);
     setPhase("idle");
     await startCamera();
   };
 
-  // ── Flip camera (unchanged) ───────────────────────────────
+  // ── Flip camera ───────────────────────────────────────────
 
   const flipCamera = async () => {
     setFacing((f) => (f === "user" ? "environment" : "user"));
@@ -250,6 +349,9 @@ function RecordPage() {
 
   // ── Core upload: storage + gifs table ────────────────────
   // Returns { publicUrl, gifId } — reuses saved result if already uploaded.
+  //
+  // Invariant: a gifs DB row is ONLY created if the storage upload succeeded,
+  // and conversely a storage file is removed if the DB insert fails.
 
   const ensureGifSaved = async (): Promise<{ publicUrl: string; gifId: string }> => {
     if (savedRef.current) return savedRef.current;
@@ -271,10 +373,18 @@ function RecordPage() {
 
     const { data: gifRow, error: gifErr } = await supabase
       .from("gifs")
-      .insert({ user_id: user.id, storage_path: storagePath, public_url: publicUrl, duration_ms: DURATION_MS })
+      .insert({
+        user_id: user.id,
+        storage_path: storagePath,
+        public_url: publicUrl,
+        duration_ms: DURATION_MS,
+      })
       .select("id")
       .single();
-    if (gifErr) throw gifErr;
+    if (gifErr) {
+      await supabase.storage.from("gifs").remove([storagePath]).catch(() => {});
+      throw gifErr;
+    }
 
     const result = { publicUrl, gifId: gifRow.id };
     savedRef.current = result;
@@ -282,7 +392,6 @@ function RecordPage() {
   };
 
   // ── Save to Library ───────────────────────────────────────
-  // Uploads (once) and stays on the preview screen.
 
   const handleSave = async () => {
     if (isSaved || uploadingRef.current) return;
@@ -299,7 +408,7 @@ function RecordPage() {
     }
   };
 
-  // ── Send as answer to an existing question ────────────────
+  // ── Send as answer ────────────────────────────────────────
 
   const handleSendAnswer = async () => {
     if (uploadingRef.current || !questionId) return;
@@ -330,9 +439,9 @@ function RecordPage() {
       queryClient.invalidateQueries({ queryKey: ["answer", "for-question", questionId] });
       queryClient.invalidateQueries({ queryKey: ["conv-answers"] });
 
-      // Increment usage counter (fire-and-forget)
-      supabase.rpc("increment_gif_usage", { p_gif_id: gifId }).catch(() => {});
-      // TODO(haptics): trigger impact feedback here when Capacitor is added
+      void (async () => {
+        try { await supabase.rpc("increment_gif_usage", { p_gif_id: gifId }); } catch { /* non-critical */ }
+      })();
 
       setPhase("done");
       setTimeout(() => { uploadingRef.current = false; navigate({ to: "/home" }); }, 900);
@@ -343,8 +452,7 @@ function RecordPage() {
     }
   };
 
-  // ── Send GIF to a friend (no questionId) ─────────────────
-  // Saves to library, then inserts a direct_gifs row so it appears in chat.
+  // ── Send GIF to a friend ──────────────────────────────────
 
   const handleSendToFriend = async (friendId: string) => {
     setShowSendSheet(false);
@@ -366,9 +474,9 @@ function RecordPage() {
 
       queryClient.invalidateQueries({ queryKey: ["conv-direct-gifs"] });
 
-      // Increment usage counter (fire-and-forget)
-      supabase.rpc("increment_gif_usage", { p_gif_id: gifId }).catch(() => {});
-      // TODO(haptics): trigger impact feedback here when Capacitor is added
+      void (async () => {
+        try { await supabase.rpc("increment_gif_usage", { p_gif_id: gifId }); } catch { /* non-critical */ }
+      })();
 
       setPhase("done");
       setTimeout(() => {
@@ -389,6 +497,15 @@ function RecordPage() {
   const showActions = phase === "preview" || phase === "uploading" || phase === "done";
   const actionsDisabled = phase === "uploading" || phase === "done";
 
+  // ── SVG border perimeter ──────────────────────────────────
+  const bInset = BORDER_STROKE / 2;
+  const bw = containerSize.w > 0 ? containerSize.w - bInset * 2 : 0;
+  const bh = containerSize.h > 0 ? containerSize.h - bInset * 2 : 0;
+  const perimeter = bw > 0 && bh > 0
+    ? 2 * (bw - 2 * BORDER_RX) + 2 * (bh - 2 * BORDER_RX) + 2 * Math.PI * BORDER_RX
+    : 0;
+  const dashOffset = perimeter > 0 ? perimeter * (1 - progress) : 0;
+
   // ── Render ────────────────────────────────────────────────
 
   return (
@@ -396,8 +513,10 @@ function RecordPage() {
       <OrangeHeader title="Record GIF" subtitle="5 seconds. Loops forever." back="/home" />
 
       <div className="px-5 pt-6">
-        <div className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl bg-black">
-
+        <div
+          ref={cameraContainerRef}
+          className="relative aspect-[3/4] w-full overflow-hidden rounded-3xl bg-black"
+        >
           {/* Always in DOM so videoRef is valid when reset() calls startCamera() */}
           <video
             ref={videoRef}
@@ -441,30 +560,14 @@ function RecordPage() {
           )}
 
           {phase === "recording" && (
-            <>
-              <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" /> REC
-              </div>
-              <div className="absolute right-4 top-4 rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold tabular-nums text-white backdrop-blur">
-                {(5 - progress * 5).toFixed(1)}s
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20">
-                <div
-                  className="h-full bg-[var(--orange)]"
-                  style={{ width: `${progress * 100}%`, transition: "width 75ms linear" }}
-                />
-              </div>
-            </>
+            <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold text-white backdrop-blur">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" /> REC
+            </div>
           )}
 
-          {phase === "countdown" && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/25">
-              <span
-                key={countdownNum}
-                className="text-9xl font-black text-white drop-shadow-2xl animate-countdown"
-              >
-                {countdownNum}
-              </span>
+          {phase === "recording" && (
+            <div className="absolute right-4 top-4 rounded-full bg-black/60 px-3 py-1.5 text-xs font-bold tabular-nums text-white backdrop-blur">
+              {(5 - progress * 5).toFixed(1)}s
             </div>
           )}
 
@@ -507,22 +610,65 @@ function RecordPage() {
               GIF · Loop
             </div>
           )}
+
+          {/* Neon green border progress — traces around the camera frame while recording */}
+          {perimeter > 0 && (
+            <svg
+              className="absolute inset-0 pointer-events-none"
+              width={containerSize.w}
+              height={containerSize.h}
+              style={{
+                opacity: borderVisible ? 1 : 0,
+                transition: "opacity 220ms ease",
+              }}
+            >
+              <rect
+                x={bInset}
+                y={bInset}
+                width={bw}
+                height={bh}
+                rx={BORDER_RX}
+                ry={BORDER_RX}
+                fill="none"
+                stroke="#4ade80"
+                strokeWidth={BORDER_STROKE}
+                strokeLinecap="round"
+                strokeDasharray={perimeter}
+                strokeDashoffset={dashOffset}
+                style={{
+                  transition: borderVisible
+                    ? "stroke-dashoffset 75ms linear"
+                    : "none",
+                }}
+              />
+            </svg>
+          )}
         </div>
 
         <div className="mt-8 flex flex-col items-center gap-4">
           {!showActions ? (
-            <button
-              onClick={start}
-              disabled={phase === "recording" || phase === "encoding" || phase === "countdown" || !!error}
-              className={`relative grid h-20 w-20 place-items-center rounded-full text-white shadow-xl disabled:opacity-60 ${phase === "idle" ? "animate-pulse-ring" : ""}`}
-              style={{ backgroundColor: phase === "recording" ? "#dc2626" : "var(--orange)" }}
-              aria-label="Record"
-            >
-              <div
-                className={`${phase === "recording" ? "h-6 w-6 rounded-md" : "h-14 w-14 rounded-full"} bg-white/95`}
-                style={{ transition: "all 200ms ease" }}
-              />
-            </button>
+            <>
+              <button
+                onPointerDown={handleButtonPointerDown}
+                onPointerUp={handleButtonPointerUp}
+                onPointerLeave={handleButtonPointerLeave}
+                disabled={phase === "encoding" || !!error}
+                className={`relative grid h-20 w-20 place-items-center rounded-full text-white shadow-xl disabled:opacity-60 ${phase === "idle" ? "animate-pulse-ring" : ""}`}
+                style={{ backgroundColor: phase === "recording" ? "#dc2626" : "var(--orange)" }}
+                aria-label={phase === "recording" ? "Stop recording" : "Record"}
+              >
+                <div
+                  className={`${phase === "recording" ? "h-6 w-6 rounded-md" : "h-14 w-14 rounded-full"} bg-white/95`}
+                  style={{ transition: "all 200ms ease" }}
+                />
+              </button>
+
+              {minDurationError && (
+                <p className="text-center text-xs font-medium text-amber-600 dark:text-amber-400">
+                  {minDurationError}
+                </p>
+              )}
+            </>
           ) : (
             <div className="w-full space-y-3">
               {/* Row: Retake + Save */}
@@ -576,8 +722,7 @@ function RecordPage() {
           )}
 
           <p className="text-center text-xs text-muted-foreground">
-            {phase === "idle" && (error ? "Camera unavailable" : "Tap to start a 5-second recording")}
-            {phase === "countdown" && "Get ready…"}
+            {phase === "idle" && (error ? "Camera unavailable" : "Hold to record")}
             {phase === "recording" && "Recording…"}
             {phase === "encoding" && "Encoding your GIF…"}
             {phase === "preview" && "Looks good? Save to Library or Send."}
@@ -605,9 +750,7 @@ function RecordPage() {
               onClick={() => void handleSendToFriend(f.id)}
               className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3.5 text-left transition active:scale-[0.99]"
             >
-              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-muted text-xl">
-                {f.avatar_emoji}
-              </div>
+              <UserAvatar avatarUrl={f.avatar_url} avatarEmoji={f.avatar_emoji} size={44} />
               <p className="text-sm font-semibold">{f.username}</p>
             </button>
           ))}

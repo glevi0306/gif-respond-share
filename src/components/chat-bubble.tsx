@@ -1,16 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { Video } from "lucide-react";
 import { compactTime } from "../hooks/use-questions";
+import { UserAvatar } from "./user-avatar";
 
-// Bubble border-radius: small corner on the "tail" side gives a speech-bubble effect
-const RIGHT_RADIUS = "18px 18px 4px 18px"; // my messages
-const LEFT_RADIUS  = "18px 18px 18px 4px"; // partner messages
+const RIGHT_RADIUS = "18px 18px 4px 18px";
+const LEFT_RADIUS  = "18px 18px 18px 4px";
 
 // ── ChatBubble ────────────────────────────────────────────────
-// Handles question text and "GIF deleted" placeholder variants.
-// Theme-aware: uses bg-foreground/text-background so the colour inverts
-// automatically between light (black bubble, white text) and dark mode
-// (white bubble, black text).
 
 export interface ChatBubbleProps {
   variant: "question" | "deleted";
@@ -18,16 +14,15 @@ export interface ChatBubbleProps {
   createdAt: string;
   isRight: boolean;
   avatarEmoji?: string;
+  avatarUrl?: string | null;
 }
 
-export function ChatBubble({ variant, text, createdAt, isRight, avatarEmoji }: ChatBubbleProps) {
+export function ChatBubble({ variant, text, createdAt, isRight, avatarEmoji, avatarUrl }: ChatBubbleProps) {
   const isDeleted = variant === "deleted";
   return (
     <div className={`flex items-end gap-2 ${isRight ? "justify-end" : "justify-start"}`}>
       {!isRight && (
-        <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-muted text-sm">
-          {avatarEmoji ?? "🙂"}
-        </div>
+        <UserAvatar avatarUrl={avatarUrl} avatarEmoji={avatarEmoji ?? "🙂"} size={28} />
       )}
       <div
         className={`flex max-w-[75%] flex-col gap-1 animate-question-reveal ${
@@ -40,7 +35,10 @@ export function ChatBubble({ variant, text, createdAt, isRight, avatarEmoji }: C
               ? "border border-dashed border-border bg-muted text-muted-foreground"
               : "bg-foreground text-background"
           }`}
-          style={{ borderRadius: isRight ? RIGHT_RADIUS : LEFT_RADIUS }}
+          style={{
+            borderRadius: isRight ? RIGHT_RADIUS : LEFT_RADIUS,
+            boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 0.5px 1px rgba(0,0,0,0.04)",
+          }}
         >
           <p className={`text-sm ${isDeleted ? "italic" : "font-medium"} leading-snug`}>
             {text}
@@ -55,38 +53,36 @@ export function ChatBubble({ variant, text, createdAt, isRight, avatarEmoji }: C
 }
 
 // ── GifBubble ─────────────────────────────────────────────────
-// Tappable GIF bubble with an optional emoji-reaction badge.
-// The badge uses bg-foreground/text-background for theme-awareness
-// (dark mode: white circle, dark emoji; light mode: black circle, white emoji).
 
 export interface GifBubbleProps {
   gifUrl: string;
   createdAt: string;
   isRight: boolean;
   avatarEmoji?: string;
+  avatarUrl?: string | null;
   reactionEmoji?: string | null;
   onTap: () => void;
 }
 
-export function GifBubble({ gifUrl, createdAt, isRight, avatarEmoji, reactionEmoji, onTap }: GifBubbleProps) {
+export function GifBubble({ gifUrl, createdAt, isRight, avatarEmoji, avatarUrl, reactionEmoji, onTap }: GifBubbleProps) {
   return (
     <div className={`flex items-end gap-2 ${isRight ? "justify-end" : "justify-start"}`}>
       {!isRight && (
-        <div className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-muted text-sm">
-          {avatarEmoji ?? "🙂"}
-        </div>
+        <UserAvatar avatarUrl={avatarUrl} avatarEmoji={avatarEmoji ?? "🙂"} size={28} />
       )}
       <div
         className={`flex max-w-[75%] flex-col gap-1 animate-gif-reveal ${
           isRight ? "items-end" : "items-start"
         }`}
       >
-        {/* Button wrapper is relative so the badge can be positioned against it */}
         <div className={`relative w-[200px] ${reactionEmoji ? "mb-1" : ""}`}>
           <button
             onClick={onTap}
             className="w-full overflow-hidden transition-transform active:scale-[0.97]"
-            style={{ borderRadius: isRight ? RIGHT_RADIUS : LEFT_RADIUS }}
+            style={{
+              borderRadius: isRight ? RIGHT_RADIUS : LEFT_RADIUS,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.12), 0 0.5px 2px rgba(0,0,0,0.06)",
+            }}
             aria-label="View GIF"
           >
             {gifUrl ? (
@@ -107,11 +103,11 @@ export function GifBubble({ gifUrl, createdAt, isRight, avatarEmoji, reactionEmo
             )}
           </button>
 
-          {/* Reaction badge — bottom-right for left-aligned GIFs, bottom-left for right-aligned */}
           {reactionEmoji && (
             <div
               key={reactionEmoji}
-              className={`absolute -bottom-3 ${isRight ? "left-2" : "right-2"} grid h-7 w-7 place-items-center rounded-full border-2 border-background bg-foreground text-base text-background animate-reaction-pop shadow-sm`}
+              className={`absolute -bottom-3 ${isRight ? "left-2" : "right-2"} text-xl leading-none animate-reaction-pop`}
+              style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.28))" }}
             >
               {reactionEmoji}
             </div>

@@ -4,6 +4,7 @@ import { ChevronLeft, MessageCircle } from "lucide-react";
 import { BottomNav } from "../../components/bottom-nav";
 import { GifModal } from "../../components/gif-modal";
 import { ChatBubble, GifBubble, WaitingBubble } from "../../components/chat-bubble";
+import { UserAvatar } from "../../components/user-avatar";
 import {
   useConversation,
   useAnswersForConversation,
@@ -41,7 +42,8 @@ function ConversationPage() {
 
   const { data: thread = [], isLoading, error } = useConversation(partnerId);
   const { data: answersById = {} } = useAnswersForConversation(partnerId);
-  const { data: reactionsById = {} } = useReactionsForConversation(partnerId);
+  const { data: reactionsData = { byAnswerId: {}, byDirectGifId: {} } } = useReactionsForConversation(partnerId);
+  const { byAnswerId: reactionsById, byDirectGifId: reactionsByDirectGifId } = reactionsData;
   const { data: directGifs = [] } = useDirectGifsForConversation(partnerId);
 
   const upsertReaction   = useUpsertReaction();
@@ -50,8 +52,8 @@ function ConversationPage() {
   const softDeleteDirect = useSoftDeleteDirectGif();
 
   const [viewingGif, setViewingGif] = useState<ViewingGif | null>(null);
-  // Tracks whether user is near the bottom of the page; only auto-scroll if true
   const nearBottomRef = useRef(true);
+  const mountedRef = useRef(false);
 
   // Lock body scroll when modal open
   useEffect(() => {
@@ -73,12 +75,19 @@ function ConversationPage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Auto-scroll only when user is already near the bottom
+  // Wait until data is loaded, then scroll to bottom instantly on first load.
+  // On subsequent updates (new answers, new direct gifs), scroll if near bottom.
+  const answersCount = Object.keys(answersById).length;
   useEffect(() => {
-    if (nearBottomRef.current) {
+    if (isLoading) return;
+    const isFirstLoad = !mountedRef.current;
+    mountedRef.current = true;
+    if (isFirstLoad) {
+      bottomRef.current?.scrollIntoView({ behavior: "instant" });
+    } else if (nearBottomRef.current) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [thread.length, directGifs.length]);
+  }, [isLoading, thread.length, directGifs.length, answersCount]);
 
   const partner: QuestionSender | null =
     thread.length > 0
@@ -130,7 +139,7 @@ function ConversationPage() {
       <div className="pb-28">
         <ConvHeader partner={partner} />
 
-        <div className="px-4 pt-4">
+        <div className="px-4 pt-4 chat-paper-bg min-h-screen">
           {timeline.length === 0 && (
             <p className="mt-6 rounded-2xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
               No messages yet. Ask a question to start!
@@ -160,6 +169,8 @@ function ConversationPage() {
                     createdAt={d.created_at}
                     isRight={isRight}
                     avatarEmoji={partner?.avatar_emoji ?? "🙂"}
+                    avatarUrl={partner?.avatar_url}
+                    reactionEmoji={reactionsByDirectGifId[d.id]?.emoji}
                     onTap={() =>
                       setViewingGif({
                         kind: "direct",
@@ -190,6 +201,7 @@ function ConversationPage() {
                   createdAt={q.created_at}
                   isRight={iAsked}
                   avatarEmoji={partner?.avatar_emoji ?? "🙂"}
+                  avatarUrl={partner?.avatar_url}
                 />
 
                 {hasAnswer ? (
@@ -206,6 +218,7 @@ function ConversationPage() {
                       createdAt={answer!.created_at}
                       isRight={gifIsRight}
                       avatarEmoji={partner?.avatar_emoji ?? "🙂"}
+                      avatarUrl={partner?.avatar_url}
                       reactionEmoji={reactionsById[answer!.id]?.emoji}
                       onTap={() =>
                         setViewingGif({
@@ -248,13 +261,18 @@ function ConversationPage() {
           gifUrl={viewingGif.gifUrl}
           createdAt={viewingGif.createdAt}
           isOwner={viewingGif.isOwner}
-          allowReactions={viewingGif.kind === "answer"}
+          allowReactions={!viewingGif.isOwner}
+          originSide={viewingGif.isOwner ? "right" : "left"}
           currentReaction={
-            viewingGif.kind === "answer" && !viewingGif.isOwner
+            viewingGif.isOwner
+              ? null
+              : viewingGif.kind === "answer"
               ? (reactionsById[viewingGif.answerId]?.user_id === user?.id
                   ? (reactionsById[viewingGif.answerId]?.emoji ?? null)
                   : null)
-              : null
+              : (reactionsByDirectGifId[viewingGif.directGifId]?.user_id === user?.id
+                  ? (reactionsByDirectGifId[viewingGif.directGifId]?.emoji ?? null)
+                  : null)
           }
           onClose={() => setViewingGif(null)}
           onDelete={() => {
@@ -266,9 +284,14 @@ function ConversationPage() {
             setViewingGif(null);
           }}
           onReact={(emoji) => {
-            if (viewingGif.kind !== "answer") return;
-            if (emoji === null) removeReaction.mutate({ answerId: viewingGif.answerId });
-            else upsertReaction.mutate({ answerId: viewingGif.answerId, emoji });
+            if (viewingGif.isOwner) return;
+            if (viewingGif.kind === "answer") {
+              if (emoji === null) removeReaction.mutate({ answerId: viewingGif.answerId });
+              else upsertReaction.mutate({ answerId: viewingGif.answerId, emoji });
+            } else {
+              if (emoji === null) removeReaction.mutate({ directGifId: viewingGif.directGifId });
+              else upsertReaction.mutate({ directGifId: viewingGif.directGifId, emoji });
+            }
           }}
         />
       )}
@@ -292,9 +315,11 @@ function ConvHeader({ partner }: { partner: QuestionSender | null }) {
       </Link>
 
       <div className="relative shrink-0">
-        <div className="grid h-10 w-10 place-items-center rounded-full bg-muted text-xl">
-          {partner?.avatar_emoji ?? "🙂"}
-        </div>
+        <UserAvatar
+          avatarUrl={partner?.avatar_url}
+          avatarEmoji={partner?.avatar_emoji ?? "🙂"}
+          size={40}
+        />
         <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background bg-emerald-500" />
       </div>
 

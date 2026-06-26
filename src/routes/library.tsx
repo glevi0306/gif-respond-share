@@ -129,7 +129,8 @@ function LibraryPage() {
       ]);
 
       if (!ansCount && !dgCount) {
-        // Safe to remove: no conversation is displaying this GIF
+        // Best-effort: the DB row is already gone, so don't block Library delete
+        // if the storage file is missing or inaccessible.
         await supabase.storage.from("gifs").remove([selectedGif.storage_path]);
       }
       // If the GIF is still in chat, we leave the storage file intact

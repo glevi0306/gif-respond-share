@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { X, Trash2 } from "lucide-react";
 import { EmojiReactionBar } from "./emoji-reaction-bar";
 
@@ -17,6 +17,12 @@ export interface GifModalProps {
   allowReactions?: boolean;
   /** current user's selected reaction, or null */
   currentReaction: string | null;
+  /**
+   * Which side the originating GIF bubble sits on.
+   * Used to direct the close animation back toward the bubble.
+   * Defaults to "right" when not provided.
+   */
+  originSide?: "left" | "right";
   onClose: () => void;
   onDelete: () => void;
   /** emoji to react with, or null to remove current reaction */
@@ -31,21 +37,50 @@ export function GifModal({
   isOwner,
   allowReactions = true,
   currentReaction,
+  originSide = "right",
   onClose,
   onDelete,
   onReact,
   actions,
 }: GifModalProps) {
   const [imgBroken, setImgBroken] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clean up the timer if the modal is unmounted before animation finishes
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, []);
+
+  // Triggered when user picks an emoji. Fires the parent mutation then
+  // starts the directional close animation. Deselecting (emoji = null)
+  // keeps the modal open so the user can pick a different reaction.
+  const handleReact = (emoji: string | null) => {
+    onReact(emoji);
+    if (emoji !== null) {
+      setClosing(true);
+      closeTimerRef.current = setTimeout(onClose, 320);
+    }
+  };
+
+  const overlayClass = closing
+    ? "animate-overlay-fade-out"
+    : "animate-overlay-fade";
+
+  const cardClass = closing
+    ? `animate-modal-close-${originSide}`
+    : "animate-modal-spring";
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center animate-overlay-fade"
+      className={`fixed inset-0 z-50 flex items-center justify-center ${overlayClass}`}
       style={{ backgroundColor: "rgba(0,0,0,0.88)", backdropFilter: "blur(6px)" }}
-      onClick={onClose}
+      onClick={closing ? undefined : onClose}
     >
       <button
-        onClick={onClose}
+        onClick={closing ? undefined : onClose}
         className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/15 text-white transition active:scale-95"
         aria-label="Close"
       >
@@ -53,7 +88,7 @@ export function GifModal({
       </button>
 
       <div
-        className="mx-6 w-full max-w-sm animate-modal-spring"
+        className={`mx-6 w-full max-w-sm ${cardClass}`}
         onClick={(e) => e.stopPropagation()}
       >
         <p className="mb-3 text-center text-sm font-semibold tracking-wide text-white/70">
@@ -87,7 +122,7 @@ export function GifModal({
                 </button>
               </div>
             ) : allowReactions ? (
-              <EmojiReactionBar selectedReaction={currentReaction} onSelect={onReact} />
+              <EmojiReactionBar selectedReaction={currentReaction} onSelect={handleReact} />
             ) : null
           )}
         </div>

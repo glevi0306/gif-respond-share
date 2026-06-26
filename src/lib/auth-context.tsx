@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 
@@ -6,6 +6,7 @@ export type Profile = {
   id: string;
   username: string;
   avatar_emoji: string;
+  avatar_url: string | null;
   bio: string;
   language: string;
 };
@@ -16,6 +17,7 @@ type AuthCtx = {
   profile: Profile | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 };
 
 const Ctx = createContext<AuthCtx | null>(null);
@@ -23,10 +25,10 @@ const Ctx = createContext<AuthCtx | null>(null);
 async function loadProfile(userId: string): Promise<Profile | null> {
   const { data } = await supabase
     .from("profiles")
-    .select("id, username, avatar_emoji, bio, language")
+    .select("id, username, avatar_emoji, avatar_url, bio, language")
     .eq("id", userId)
     .single();
-  return data ?? null;
+  return (data as Profile | null) ?? null;
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -38,7 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
 
-    // Resolve the initial session (handles OAuth hash fragments automatically)
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (cancelled) return;
       setSession(session);
@@ -54,7 +55,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!cancelled) setLoading(false);
     });
 
-    // Keep session in sync for sign-in / sign-out / token refresh
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -83,8 +83,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const refreshProfile = useCallback(async () => {
+    if (!user) return;
+    try {
+      const p = await loadProfile(user.id);
+      setProfile(p);
+    } catch {
+      // ignore
+    }
+  }, [user]);
+
   return (
-    <Ctx.Provider value={{ session, user, profile, loading, signOut }}>
+    <Ctx.Provider value={{ session, user, profile, loading, signOut, refreshProfile }}>
       {children}
     </Ctx.Provider>
   );

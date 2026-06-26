@@ -6,6 +6,7 @@ import { BottomNav } from "../components/bottom-nav";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth-context";
 import { useChats, compactTime, ChatRow } from "../hooks/use-questions";
+import { UserAvatar } from "../components/user-avatar";
 import Secauthlogo from "../assets/Secauthlogo.png";
 
 export const Route = createFileRoute("/home")({
@@ -13,7 +14,7 @@ export const Route = createFileRoute("/home")({
   component: HomePage,
 });
 
-type FriendProfile = { id: string; username: string; avatar_emoji: string };
+type FriendProfile = { id: string; username: string; avatar_emoji: string; avatar_url?: string | null };
 
 function useFriends() {
   const { user } = useAuth();
@@ -23,12 +24,12 @@ function useFriends() {
       const [{ data: asSender }, { data: asReceiver }] = await Promise.all([
         supabase
           .from("friendships")
-          .select("profile:friend_id(id, username, avatar_emoji)")
+          .select("profile:friend_id(id, username, avatar_emoji, avatar_url)")
           .eq("user_id", user!.id)
           .eq("status", "accepted"),
         supabase
           .from("friendships")
-          .select("profile:user_id(id, username, avatar_emoji)")
+          .select("profile:user_id(id, username, avatar_emoji, avatar_url)")
           .eq("friend_id", user!.id)
           .eq("status", "accepted"),
       ]);
@@ -134,8 +135,8 @@ function HomePage() {
               ))
             : friends.map((f) => (
                 <div key={f.id} className="flex w-16 shrink-0 flex-col items-center gap-1.5">
-                  <div className="relative grid h-14 w-14 place-items-center rounded-full bg-card text-2xl ring-2 ring-[var(--orange)]">
-                    {f.avatar_emoji}
+                  <div className="relative ring-2 ring-[var(--orange)] rounded-full">
+                    <UserAvatar avatarUrl={f.avatar_url} avatarEmoji={f.avatar_emoji} size={56} />
                     <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background bg-emerald-500" />
                   </div>
                   <p className="truncate text-[11px] font-medium">{f.username}</p>
@@ -170,9 +171,7 @@ function HomePage() {
                 params={{ userId: c.partnerId }}
                 className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 transition active:scale-[0.99]"
               >
-                <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-muted text-xl">
-                  {c.partner.avatar_emoji}
-                </div>
+                <UserAvatar avatarUrl={c.partner.avatar_url} avatarEmoji={c.partner.avatar_emoji} size={44} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm font-semibold">{c.partner.username}</p>

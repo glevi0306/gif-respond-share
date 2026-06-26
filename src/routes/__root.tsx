@@ -132,25 +132,18 @@ function AppShell() {
       if (dismissed) return;
       dismissed = true;
       setSplashFading(true);
-      setTimeout(() => setSplashHidden(true), 300);
+      setTimeout(() => setSplashHidden(true), 220);
     };
-    // Minimum visible duration so logo has time to render
-    const minTimer = setTimeout(() => { if (!loadingRef.current) dismiss(); }, 700);
-    // Hard cap so the splash never hangs
-    const maxTimer = setTimeout(dismiss, 1800);
+    // Show for at least 500ms so returning users don't see a flash
+    const minTimer = setTimeout(() => { if (!loadingRef.current) dismiss(); }, 500);
+    // Hard cap: never hang longer than 900ms total
+    const maxTimer = setTimeout(dismiss, 900);
     return () => { clearTimeout(minTimer); clearTimeout(maxTimer); };
-  }, []); // run once on mount
+  }, []);
 
-  // Dismiss as soon as auth resolves (if min time already passed)
   useEffect(() => {
-    // We can't call dismiss() here directly, so we trigger via a very short timer
-    // that lets the min-timer callback see the updated loadingRef
     if (!loading) {
-      const t = setTimeout(() => {
-        // If splashFading/splashHidden are already true the dismiss callback
-        // in the mount effect already ran, so this is a no-op via the
-        // `dismissed` closure guard.
-      }, 0);
+      const t = setTimeout(() => {}, 0);
       return () => clearTimeout(t);
     }
   }, [loading]);

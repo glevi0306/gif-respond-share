@@ -8,6 +8,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth-context";
 import { useSendQuestion } from "../hooks/use-questions";
 import { QUESTION_SUGGESTIONS } from "../lib/sec-data";
+import { UserAvatar } from "../components/user-avatar";
 
 export const Route = createFileRoute("/ask")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/ask")({
   component: AskPage,
 });
 
-type SearchProfile = { id: string; username: string; avatar_emoji: string };
+type SearchProfile = { id: string; username: string; avatar_emoji: string; avatar_url?: string | null };
 
 function AskPage() {
   const { to } = Route.useSearch();
@@ -35,7 +36,7 @@ function AskPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, avatar_emoji")
+        .select("id, username, avatar_emoji, avatar_url")
         .neq("id", user!.id)
         .order("username")
         .limit(100);
@@ -85,8 +86,8 @@ function AskPage() {
                 friendId === f.id ? "bg-[var(--orange)]/15" : ""
               }`}
             >
-              <div className={`grid h-14 w-14 place-items-center rounded-full bg-card text-2xl ${friendId === f.id ? "ring-2 ring-[var(--orange)]" : "ring-1 ring-border"}`}>
-                {f.avatar_emoji}
+              <div className={`${friendId === f.id ? "ring-2 ring-[var(--orange)]" : "ring-1 ring-border"} rounded-full`}>
+                <UserAvatar avatarUrl={f.avatar_url} avatarEmoji={f.avatar_emoji} size={56} />
               </div>
               <p className="truncate text-[11px] font-medium">{f.username}</p>
             </button>

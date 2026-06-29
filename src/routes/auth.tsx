@@ -82,7 +82,7 @@ function AuthPage() {
   if (checkEmail) {
     return (
       <div className="min-h-screen pb-10">
-        <div className="orange-header pb-10 pt-12 text-center">
+        <div className="orange-header pb-10 text-center" style={{ paddingTop: "max(3rem, env(safe-area-inset-top))" }}>
           <img
             src={Secauthlogo}
             alt="Sec."
@@ -110,7 +110,7 @@ function AuthPage() {
   // ── Main auth form ───────────────────────────────────────────
   return (
     <div className="min-h-screen pb-10">
-      <div className="orange-header pb-10 pt-12 text-center">
+      <div className="orange-header pb-10 text-center" style={{ paddingTop: "max(3rem, env(safe-area-inset-top))" }}>
         <img
           src={Secauthlogo}
           alt="Sec."

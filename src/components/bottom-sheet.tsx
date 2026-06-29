@@ -24,7 +24,8 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-t-3xl bg-background px-5 pb-10 pt-4 shadow-xl animate-slide-up"
+        className="w-full max-w-lg rounded-t-3xl bg-background px-5 pt-4 shadow-xl animate-slide-up"
+        style={{ paddingBottom: "max(2.5rem, calc(env(safe-area-inset-bottom) + 1.5rem))" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag handle */}

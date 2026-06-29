@@ -305,7 +305,10 @@ function ConversationPage() {
 
 function ConvHeader({ partner }: { partner: QuestionSender | null }) {
   return (
-    <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+    <header
+      className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-background/95 px-4 pb-3 backdrop-blur-sm"
+      style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
+    >
       <Link
         to="/home"
         className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground transition active:scale-95"

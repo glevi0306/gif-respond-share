@@ -14,7 +14,10 @@ const tabs: Tab[] = [
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
-    <nav className="fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 px-4 pb-4 pt-2">
+    <nav
+      className="fixed bottom-0 left-1/2 z-40 w-full max-w-md -translate-x-1/2 px-4 pt-2"
+      style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+    >
       <div className="flex items-center justify-between rounded-full border border-border bg-card/95 px-3 py-2 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.25)] backdrop-blur">
         {tabs.map(({ to, icon: Icon, label, primary }) => {
           const active = pathname === to || pathname.startsWith(to + "/");

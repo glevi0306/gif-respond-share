@@ -1,11 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Bell, Plus } from "lucide-react";
+import { Bell, Plus, UserPlus } from "lucide-react";
+import { useState } from "react";
 import { OrangeHeader } from "../components/orange-header";
 import { BottomNav } from "../components/bottom-nav";
+import { FindFriendsSheet } from "../components/find-friends-sheet";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth-context";
 import { useChats, compactTime, ChatRow } from "../hooks/use-questions";
+import { useFriendRequests } from "../hooks/use-friendships";
 import { UserAvatar } from "../components/user-avatar";
 import Secauthlogo from "../assets/Secauthlogo.png";
 
@@ -71,6 +74,8 @@ function StatusBadge({ status }: { status: ChatRow["status"] }) {
 function HomePage() {
   const { data: chats = [], isLoading: chatsLoading } = useChats();
   const { data: friends = [], isLoading: friendsLoading } = useFriends();
+  const { data: friendRequests = [] } = useFriendRequests();
+  const [showFriendsSheet, setShowFriendsSheet] = useState(false);
 
   const pending = chats.filter(
     (c) => c.status === "new-question" || c.status === "new-answer",
@@ -122,8 +127,19 @@ function HomePage() {
 
       <section className="px-5 pt-6">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-base font-bold">Friends online</h2>
-          <span className="text-xs text-muted-foreground">{friends.length} active</span>
+          <h2 className="text-base font-bold">Friends</h2>
+          <button
+            onClick={() => setShowFriendsSheet(true)}
+            className="relative flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold transition active:scale-95"
+          >
+            <UserPlus className="h-3.5 w-3.5" />
+            Add
+            {friendRequests.length > 0 && (
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--orange)] px-1 text-[9px] font-bold text-white">
+                {friendRequests.length}
+              </span>
+            )}
+          </button>
         </div>
         <div className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {friendsLoading
@@ -193,6 +209,8 @@ function HomePage() {
           </div>
         )}
       </section>
+
+      <FindFriendsSheet isOpen={showFriendsSheet} onClose={() => setShowFriendsSheet(false)} />
 
       <BottomNav />
     </div>

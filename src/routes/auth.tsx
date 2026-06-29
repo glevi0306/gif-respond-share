@@ -196,7 +196,11 @@ function AuthPage() {
             </p>
           )}
 
-          <button type="submit" disabled={submitting} className="btn-black w-full disabled:opacity-60">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="btn-black w-full disabled:opacity-60"
+          >
             {submitting ? "Please wait…" : mode === "login" ? "Log in" : "Create account"}
           </button>
         </form>

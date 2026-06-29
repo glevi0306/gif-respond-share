@@ -125,8 +125,8 @@ function HomePage() {
         </div>
       </OrangeHeader>
 
-      <section className="px-5 pt-6">
-        <div className="mb-3 flex items-center justify-between">
+      <section className="pt-6">
+        <div className="mb-3 flex items-center justify-between px-5">
           <h2 className="text-base font-bold">Friends</h2>
           <button
             onClick={() => setShowFriendsSheet(true)}
@@ -141,23 +141,30 @@ function HomePage() {
             )}
           </button>
         </div>
-        <div className="flex gap-3 overflow-x-auto pt-2 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {friendsLoading
-            ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex w-16 shrink-0 flex-col items-center gap-1.5">
-                  <div className="h-14 w-14 animate-pulse rounded-full bg-muted" />
-                  <div className="h-2.5 w-10 animate-pulse rounded-full bg-muted" />
-                </div>
-              ))
-            : friends.map((f) => (
-                <div key={f.id} className="flex w-16 shrink-0 flex-col items-center gap-1.5">
-                  <div className="relative rounded-full border-2 border-[var(--orange)] p-0.5 bg-background">
-                    <UserAvatar avatarUrl={f.avatar_url} avatarEmoji={f.avatar_emoji} size={56} />
-                    <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background bg-emerald-500" />
+        <div className="overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex gap-3 px-5 py-2">
+            {friendsLoading
+              ? Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex w-16 shrink-0 flex-col items-center gap-1.5">
+                    <div className="h-14 w-14 animate-pulse rounded-full bg-muted" />
+                    <div className="h-2.5 w-10 animate-pulse rounded-full bg-muted" />
                   </div>
-                  <p className="truncate text-[11px] font-medium">{f.username}</p>
-                </div>
-              ))}
+                ))
+              : friends.map((f) => (
+                  <Link
+                    key={f.id}
+                    to="/conversation/$userId"
+                    params={{ userId: f.id }}
+                    className="flex w-16 shrink-0 flex-col items-center gap-1.5"
+                  >
+                    <div className="relative rounded-full border-2 border-[var(--orange)] p-0.5 bg-background">
+                      <UserAvatar avatarUrl={f.avatar_url} avatarEmoji={f.avatar_emoji} size={56} />
+                      <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background bg-emerald-500" />
+                    </div>
+                    <p className="truncate text-[11px] font-medium">{f.username}</p>
+                  </Link>
+                ))}
+          </div>
         </div>
       </section>
 

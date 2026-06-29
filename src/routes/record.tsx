@@ -452,6 +452,7 @@ function RecordPage() {
     if (isSaved || uploadingRef.current) return;
     uploadingRef.current = true;
     setSaveError(null);
+    setPhase("uploading");
     try {
       await ensureGifSaved();
       setIsSaved(true);
@@ -460,6 +461,7 @@ function RecordPage() {
       setSaveError(err instanceof Error ? err.message : "Save failed.");
     } finally {
       uploadingRef.current = false;
+      setPhase("preview");
     }
   };
 

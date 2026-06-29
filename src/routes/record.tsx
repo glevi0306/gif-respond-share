@@ -554,7 +554,7 @@ function RecordPage() {
           <video
             ref={videoRef}
             playsInline muted autoPlay
-            className={`absolute inset-0 h-full w-full object-cover ${!showCamera ? "hidden" : ""}`}
+            className={`absolute inset-0 h-full w-full object-contain ${!showCamera ? "hidden" : ""}`}
             style={{
               transform: facing === "user" ? "scaleX(-1)" : undefined,
               opacity: cameraOpacity,

@@ -1,0 +1,25 @@
+{
+  "name": "Sec.",
+  "short_name": "Sec",
+  "description": "Ask anything. Answer with a GIF.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FF7A00",
+  "theme_color": "#FF7A00",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

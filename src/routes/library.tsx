@@ -49,7 +49,11 @@ function LibraryPage() {
   // Tracks which gif id is animating its category emoji badge
   const [animatingCatId, setAnimatingCatId] = useState<string | null>(null);
 
-  const { data: gifs = [], isLoading, error } = useQuery<GifRow[]>({
+  const {
+    data: gifs = [],
+    isLoading,
+    error,
+  } = useQuery<GifRow[]>({
     queryKey: ["gifs", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -79,11 +83,12 @@ function LibraryPage() {
   });
 
   // Apply category + favorites filter
-  const filtered = cat === "favorites"
-    ? gifs.filter((g) => g.is_favorite)
-    : cat === "all"
-      ? gifs
-      : gifs.filter((g) => g.category === cat);
+  const filtered =
+    cat === "favorites"
+      ? gifs.filter((g) => g.is_favorite)
+      : cat === "all"
+        ? gifs
+        : gifs.filter((g) => g.category === cat);
 
   // Apply sort
   const items = [...filtered].sort((a, b) => {
@@ -106,10 +111,7 @@ function LibraryPage() {
       // With migration 009, answers.gif_id becomes nullable (ON DELETE SET NULL),
       // so this succeeds even for GIFs that have been used as answers.
       // answers.gif_url is denormalized, so chat display continues to work.
-      const { error: dbError } = await supabase
-        .from("gifs")
-        .delete()
-        .eq("id", selectedGif.id);
+      const { error: dbError } = await supabase.from("gifs").delete().eq("id", selectedGif.id);
       if (dbError) throw dbError;
 
       // Step 2: Only delete the storage file if no active chat message
@@ -185,7 +187,7 @@ function LibraryPage() {
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["conv-direct-gifs"] });
       // Increment usage counter (fire-and-forget)
-      supabase.rpc("increment_gif_usage", { p_gif_id: selectedGif.id }).catch(() => {});
+      void supabase.rpc("increment_gif_usage", { p_gif_id: selectedGif.id });
       setShowShareSheet(false);
       setFriendSearch("");
       setSelectedGif(null);
@@ -201,7 +203,7 @@ function LibraryPage() {
     const next = !gif.is_favorite;
     // Optimistic update
     queryClient.setQueryData<GifRow[]>(["gifs", user?.id], (prev) =>
-      (prev ?? []).map((g) => (g.id === gif.id ? { ...g, is_favorite: next } : g))
+      (prev ?? []).map((g) => (g.id === gif.id ? { ...g, is_favorite: next } : g)),
     );
     await supabase.from("gifs").update({ is_favorite: next }).eq("id", gif.id);
     queryClient.invalidateQueries({ queryKey: ["gifs"] });
@@ -218,53 +220,59 @@ function LibraryPage() {
           {deleteError}
         </p>
       )}
-    <div className="flex justify-around">
-      <button
-        onClick={() => void handleDelete()}
-        disabled={busy}
-        className="flex flex-col items-center gap-1.5 px-4 py-2 transition active:scale-95 disabled:opacity-50"
-      >
-        <div className="grid h-10 w-10 place-items-center rounded-full border border-red-500/30 bg-red-500/10 text-red-400">
-          <Trash2 className="h-4 w-4" />
-        </div>
-        <span className="text-[11px] font-semibold text-red-400">Delete</span>
-      </button>
+      <div className="flex justify-around">
+        <button
+          onClick={() => void handleDelete()}
+          disabled={busy}
+          className="flex flex-col items-center gap-1.5 px-4 py-2 transition active:scale-95 disabled:opacity-50"
+        >
+          <div className="grid h-10 w-10 place-items-center rounded-full border border-red-500/30 bg-red-500/10 text-red-400">
+            <Trash2 className="h-4 w-4" />
+          </div>
+          <span className="text-[11px] font-semibold text-red-400">Delete</span>
+        </button>
 
-      <button
-        onClick={() => setShowCategorySheet(true)}
-        disabled={busy}
-        className="flex flex-col items-center gap-1.5 px-4 py-2 transition active:scale-95 disabled:opacity-50"
-      >
-        <div className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-base">
-          {getCategoryEmoji(selectedGif.category) ?? <Tag className="h-4 w-4 text-muted-foreground" />}
-        </div>
-        <span className="text-[11px] font-semibold text-muted-foreground">Category</span>
-      </button>
+        <button
+          onClick={() => setShowCategorySheet(true)}
+          disabled={busy}
+          className="flex flex-col items-center gap-1.5 px-4 py-2 transition active:scale-95 disabled:opacity-50"
+        >
+          <div className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-base">
+            {getCategoryEmoji(selectedGif.category) ?? (
+              <Tag className="h-4 w-4 text-muted-foreground" />
+            )}
+          </div>
+          <span className="text-[11px] font-semibold text-muted-foreground">Category</span>
+        </button>
 
-      <button
-        onClick={(e) => void handleToggleFavorite(selectedGif, e)}
-        disabled={busy}
-        className="flex flex-col items-center gap-1.5 px-4 py-2 transition active:scale-95 disabled:opacity-50"
-      >
-        <div className={`grid h-10 w-10 place-items-center rounded-full border ${selectedGif.is_favorite ? "border-amber-400/40 bg-amber-400/15 text-amber-400" : "border-border bg-card text-muted-foreground"}`}>
-          <Star className={`h-4 w-4 ${selectedGif.is_favorite ? "fill-amber-400" : ""}`} />
-        </div>
-        <span className={`text-[11px] font-semibold ${selectedGif.is_favorite ? "text-amber-400" : "text-muted-foreground"}`}>
-          {selectedGif.is_favorite ? "Starred" : "Star"}
-        </span>
-      </button>
+        <button
+          onClick={(e) => void handleToggleFavorite(selectedGif, e)}
+          disabled={busy}
+          className="flex flex-col items-center gap-1.5 px-4 py-2 transition active:scale-95 disabled:opacity-50"
+        >
+          <div
+            className={`grid h-10 w-10 place-items-center rounded-full border ${selectedGif.is_favorite ? "border-amber-400/40 bg-amber-400/15 text-amber-400" : "border-border bg-card text-muted-foreground"}`}
+          >
+            <Star className={`h-4 w-4 ${selectedGif.is_favorite ? "fill-amber-400" : ""}`} />
+          </div>
+          <span
+            className={`text-[11px] font-semibold ${selectedGif.is_favorite ? "text-amber-400" : "text-muted-foreground"}`}
+          >
+            {selectedGif.is_favorite ? "Starred" : "Star"}
+          </span>
+        </button>
 
-      <button
-        onClick={() => setShowShareSheet(true)}
-        disabled={busy}
-        className="flex flex-col items-center gap-1.5 px-4 py-2 transition active:scale-95 disabled:opacity-50"
-      >
-        <div className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card">
-          <Share2 className="h-4 w-4 text-muted-foreground" />
-        </div>
-        <span className="text-[11px] font-semibold text-muted-foreground">Share</span>
-      </button>
-    </div>
+        <button
+          onClick={() => setShowShareSheet(true)}
+          disabled={busy}
+          className="flex flex-col items-center gap-1.5 px-4 py-2 transition active:scale-95 disabled:opacity-50"
+        >
+          <div className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card">
+            <Share2 className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <span className="text-[11px] font-semibold text-muted-foreground">Share</span>
+        </button>
+      </div>
     </div>
   ) : null;
 
@@ -281,8 +289,12 @@ function LibraryPage() {
       <div className="px-5 pt-5">
         {/* Category filter tabs */}
         <div className="flex gap-2 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <CatChip active={cat === "all"} onClick={() => setCat("all")}>All</CatChip>
-          <CatChip active={cat === "favorites"} onClick={() => setCat("favorites")}>⭐ Favorites</CatChip>
+          <CatChip active={cat === "all"} onClick={() => setCat("all")}>
+            All
+          </CatChip>
+          <CatChip active={cat === "favorites"} onClick={() => setCat("favorites")}>
+            ⭐ Favorites
+          </CatChip>
           {GIF_CATEGORIES.map((c) => (
             <CatChip key={c.key} active={cat === c.key} onClick={() => setCat(c.key)}>
               {c.emoji} {c.label}
@@ -421,7 +433,9 @@ function LibraryPage() {
               >
                 <span className="text-xl">{c.emoji}</span>
                 <span className="text-sm font-semibold">{c.label}</span>
-                {isSelected && <span className="ml-auto text-xs font-semibold opacity-70">Selected</span>}
+                {isSelected && (
+                  <span className="ml-auto text-xs font-semibold opacity-70">Selected</span>
+                )}
               </button>
             );
           })}
@@ -431,7 +445,10 @@ function LibraryPage() {
       {/* Share / friend picker sheet */}
       <BottomSheet
         isOpen={showShareSheet}
-        onClose={() => { setShowShareSheet(false); setFriendSearch(""); }}
+        onClose={() => {
+          setShowShareSheet(false);
+          setFriendSearch("");
+        }}
         title="Send to Friend"
       >
         <div className="mb-3 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2.5">

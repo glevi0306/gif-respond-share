@@ -64,7 +64,7 @@ export function AvatarEditor({ file, onSave, onCancel }: AvatarEditorProps) {
       const factor = e.deltaY < 0 ? 1.07 : 0.93;
       const img = imgRef.current;
       if (img) {
-        const minScale = CROP_SIZE / Math.min(img.naturalWidth, img.naturalHeight) * 0.5;
+        const minScale = (CROP_SIZE / Math.min(img.naturalWidth, img.naturalHeight)) * 0.5;
         scaleRef.current = Math.max(minScale, Math.min(scaleRef.current * factor, 6));
       }
       redraw();
@@ -101,7 +101,7 @@ export function AvatarEditor({ file, onSave, onCancel }: AvatarEditorProps) {
       const factor = dist / lastPinchRef.current;
       const img = imgRef.current;
       if (img) {
-        const minScale = CROP_SIZE / Math.min(img.naturalWidth, img.naturalHeight) * 0.5;
+        const minScale = (CROP_SIZE / Math.min(img.naturalWidth, img.naturalHeight)) * 0.5;
         scaleRef.current = Math.max(minScale, Math.min(scaleRef.current * factor, 6));
       }
       lastPinchRef.current = dist;
@@ -147,7 +147,9 @@ export function AvatarEditor({ file, onSave, onCancel }: AvatarEditorProps) {
     ctx.clip();
     ctx.drawImage(canvas, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
     ctx.restore();
-    out.toBlob((blob) => { if (blob) onSave(blob); }, "image/png");
+    out.toBlob((blob) => {
+      if (blob) onSave(blob);
+    }, "image/png");
   };
 
   return (

@@ -17,7 +17,12 @@ export const Route = createFileRoute("/home")({
   component: HomePage,
 });
 
-type FriendProfile = { id: string; username: string; avatar_emoji: string; avatar_url?: string | null };
+type FriendProfile = {
+  id: string;
+  username: string;
+  avatar_emoji: string;
+  avatar_url?: string | null;
+};
 
 function useFriends() {
   const { user } = useAuth();
@@ -37,8 +42,8 @@ function useFriends() {
           .eq("status", "accepted"),
       ]);
       const profiles = [
-        ...((asSender ?? []) as any[]).map((r) => r.profile),
-        ...((asReceiver ?? []) as any[]).map((r) => r.profile),
+        ...((asSender ?? []) as { profile: FriendProfile }[]).map((r) => r.profile),
+        ...((asReceiver ?? []) as { profile: FriendProfile }[]).map((r) => r.profile),
       ].filter(Boolean) as FriendProfile[];
       return profiles;
     },
@@ -96,20 +101,13 @@ function HomePage() {
         }
       >
         <div className="mb-5 flex flex-col items-center">
-          <img
-            src={Secauthlogo}
-            alt="Sec."
-            className="w-44 object-contain"
-          />
-          <p className="mt-2 text-sm text-white/85">
-          </p>
+          <img src={Secauthlogo} alt="Sec." className="w-44 object-contain" />
+          <p className="mt-2 text-sm text-white/85"></p>
         </div>
 
         <div className="flex items-center justify-between rounded-2xl bg-black/15 p-3 backdrop-blur">
           <div>
-            <p className="text-xs uppercase tracking-wider text-white/75">
-              Today
-            </p>
+            <p className="text-xs uppercase tracking-wider text-white/75">Today</p>
             <p className="text-sm font-semibold text-white">
               {pending > 0 ? `${pending} pending` : "All caught up"}
             </p>
@@ -117,6 +115,7 @@ function HomePage() {
 
           <Link
             to="/ask"
+            search={{ to: undefined }}
             className="flex items-center gap-1.5 rounded-full bg-black px-3 py-2 text-xs font-semibold text-white"
           >
             <Plus className="h-4 w-4" />
@@ -174,7 +173,10 @@ function HomePage() {
         {chatsLoading && (
           <div className="space-y-2.5">
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5">
+              <div
+                key={i}
+                className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5"
+              >
                 <div className="h-11 w-11 shrink-0 animate-pulse rounded-full bg-muted" />
                 <div className="flex-1 space-y-2">
                   <div className="h-3.5 w-2/5 animate-pulse rounded-full bg-muted" />
@@ -194,7 +196,11 @@ function HomePage() {
                 params={{ userId: c.partnerId }}
                 className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 transition active:scale-[0.99]"
               >
-                <UserAvatar avatarUrl={c.partner.avatar_url} avatarEmoji={c.partner.avatar_emoji} size={44} />
+                <UserAvatar
+                  avatarUrl={c.partner.avatar_url}
+                  avatarEmoji={c.partner.avatar_emoji}
+                  size={44}
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate text-sm font-semibold">{c.partner.username}</p>

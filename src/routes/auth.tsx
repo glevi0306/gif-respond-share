@@ -63,7 +63,11 @@ function AuthPage() {
       // this navigate is a fallback in case the guard fires before re-render.
       navigate({ to: "/home" });
     } catch (err) {
-      setError(friendlyAuthError(err instanceof Error ? err.message : "Something went wrong. Please try again."));
+      setError(
+        friendlyAuthError(
+          err instanceof Error ? err.message : "Something went wrong. Please try again.",
+        ),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -82,22 +86,25 @@ function AuthPage() {
   if (checkEmail) {
     return (
       <div className="min-h-screen pb-10">
-        <div className="orange-header pb-10 text-center" style={{ paddingTop: "max(3rem, env(safe-area-inset-top))" }}>
-          <img
-            src={Secauthlogo}
-            alt="Sec."
-            className="mx-auto mb-5 w-72 object-contain"
-          />
+        <div
+          className="orange-header pb-10 text-center"
+          style={{ paddingTop: "max(3rem, env(safe-area-inset-top))" }}
+        >
+          <img src={Secauthlogo} alt="Sec." className="mx-auto mb-5 w-72 object-contain" />
           <p className="mt-1 text-sm text-white/85">Ask anything. Answer with a GIF.</p>
         </div>
         <div className="px-5 pt-8 text-center">
           <p className="text-2xl font-bold">Check your email</p>
           <p className="mt-2 text-sm text-muted-foreground">
-            We sent a confirmation link to <span className="font-semibold text-foreground">{email}</span>.
-            Click it to finish signing up.
+            We sent a confirmation link to{" "}
+            <span className="font-semibold text-foreground">{email}</span>. Click it to finish
+            signing up.
           </p>
           <button
-            onClick={() => { setCheckEmail(false); setMode("login"); }}
+            onClick={() => {
+              setCheckEmail(false);
+              setMode("login");
+            }}
             className="btn-black mt-6 w-full"
           >
             Back to log in
@@ -110,31 +117,45 @@ function AuthPage() {
   // ── Main auth form ───────────────────────────────────────────
   return (
     <div className="min-h-screen pb-10">
-      <div className="orange-header pb-10 text-center" style={{ paddingTop: "max(3rem, env(safe-area-inset-top))" }}>
-        <img
-          src={Secauthlogo}
-          alt="Sec."
-          className="mx-auto mb-5 w-72 object-contain"
-        />
+      <div
+        className="orange-header pb-10 text-center"
+        style={{ paddingTop: "max(3rem, env(safe-area-inset-top))" }}
+      >
+        <img src={Secauthlogo} alt="Sec." className="mx-auto mb-5 w-72 object-contain" />
         <p className="mt-1 text-sm text-white/85">Ask anything. Answer with a GIF.</p>
       </div>
 
       <div className="px-5 pt-6">
         <div className="mb-5 flex rounded-full bg-muted p-1 text-sm font-semibold">
           <button
-            onClick={() => { setMode("login"); setError(null); setUsernameError(null); setTouched(false); }}
+            onClick={() => {
+              setMode("login");
+              setError(null);
+              setUsernameError(null);
+              setTouched(false);
+            }}
             className={`flex-1 rounded-full py-2 transition ${mode === "login" ? "bg-card shadow text-foreground" : "text-muted-foreground"}`}
-          >Log in</button>
+          >
+            Log in
+          </button>
           <button
-            onClick={() => { setMode("signup"); setError(null); }}
+            onClick={() => {
+              setMode("signup");
+              setError(null);
+            }}
             className={`flex-1 rounded-full py-2 transition ${mode === "signup" ? "bg-card shadow text-foreground" : "text-muted-foreground"}`}
-          >Sign up</button>
+          >
+            Sign up
+          </button>
         </div>
 
         <form onSubmit={submit} className="space-y-3 animate-pop-in">
           <input
-            type="email" placeholder="Email" required
-            value={email} onChange={(e) => setEmail(e.target.value)}
+            type="email"
+            placeholder="Email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             disabled={submitting}
             className="w-full rounded-2xl border border-border bg-card px-4 py-3.5 text-sm outline-none focus:border-foreground disabled:opacity-60"
           />
@@ -150,40 +171,53 @@ function AuthPage() {
                   setUsername(v);
                   if (touched) setUsernameError(validateUsername(v));
                 }}
-                onBlur={() => { setTouched(true); setUsernameError(validateUsername(username)); }}
+                onBlur={() => {
+                  setTouched(true);
+                  setUsernameError(validateUsername(username));
+                }}
                 disabled={submitting}
                 autoCapitalize="none"
                 autoCorrect="off"
                 maxLength={20}
                 className={`w-full rounded-2xl border bg-card px-4 py-3.5 text-sm outline-none focus:border-foreground disabled:opacity-60 ${usernameError ? "border-red-400" : "border-border"}`}
               />
-              {usernameError && (
-                <p className="mt-1.5 px-1 text-xs text-red-500">{usernameError}</p>
-              )}
+              {usernameError && <p className="mt-1.5 px-1 text-xs text-red-500">{usernameError}</p>}
               {!usernameError && username.length > 0 && (
-                <p className="mt-1.5 px-1 text-xs text-muted-foreground">Lowercase letters, numbers, and _ only · max 20 chars</p>
+                <p className="mt-1.5 px-1 text-xs text-muted-foreground">
+                  Lowercase letters, numbers, and _ only · max 20 chars
+                </p>
               )}
             </div>
           )}
           <input
-            type="password" placeholder="Password" required
-            value={password} onChange={(e) => setPassword(e.target.value)}
+            type="password"
+            placeholder="Password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             disabled={submitting}
             className="w-full rounded-2xl border border-border bg-card px-4 py-3.5 text-sm outline-none focus:border-foreground disabled:opacity-60"
           />
 
           {mode === "signup" && (
             <div className="rounded-2xl border border-border bg-card p-3">
-              <label className="mb-2 block px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Language</label>
+              <label className="mb-2 block px-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Language
+              </label>
               <div className="grid grid-cols-2 gap-2">
                 {LANGUAGES.map((l) => (
                   <button
-                    key={l.code} type="button" onClick={() => setLang(l.code)}
+                    key={l.code}
+                    type="button"
+                    onClick={() => setLang(l.code)}
                     className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm transition ${
-                      lang === l.code ? "border-foreground bg-foreground text-background" : "border-border bg-background"
+                      lang === l.code
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-background"
                     }`}
                   >
-                    <span>{l.flag}</span><span className="truncate">{l.label}</span>
+                    <span>{l.flag}</span>
+                    <span className="truncate">{l.label}</span>
                   </button>
                 ))}
               </div>
@@ -206,7 +240,8 @@ function AuthPage() {
         </form>
 
         <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
-          <div className="h-px flex-1 bg-border" /> or continue with <div className="h-px flex-1 bg-border" />
+          <div className="h-px flex-1 bg-border" /> or continue with{" "}
+          <div className="h-px flex-1 bg-border" />
         </div>
 
         <div className="space-y-2">
@@ -225,7 +260,15 @@ function AuthPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          By continuing you agree to our <Link to="/auth" className="underline">Terms</Link> and <Link to="/auth" className="underline">Privacy Policy</Link>.
+          By continuing you agree to our{" "}
+          <Link to="/auth" className="underline">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link to="/auth" className="underline">
+            Privacy Policy
+          </Link>
+          .
         </p>
       </div>
     </div>

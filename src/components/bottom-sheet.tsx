@@ -12,7 +12,9 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
   useEffect(() => {
     if (isOpen) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -30,9 +32,7 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
       >
         {/* Drag handle */}
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-muted-foreground/25" />
-        {title && (
-          <h2 className="mb-4 text-center text-base font-bold">{title}</h2>
-        )}
+        {title && <h2 className="mb-4 text-center text-base font-bold">{title}</h2>}
         {children}
       </div>
     </div>

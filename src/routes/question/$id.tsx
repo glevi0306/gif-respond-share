@@ -19,7 +19,11 @@ function QuestionDetailPage() {
   const { user } = useAuth();
 
   // Poll for status changes, but stop once the question is answered.
-  const { data: q, isLoading, error } = useQuestion(id, {
+  const {
+    data: q,
+    isLoading,
+    error,
+  } = useQuestion(id, {
     refetchInterval: (query) =>
       (query.state.data as { status?: string } | undefined)?.status === "answered" ? false : 4000,
   });
@@ -97,11 +101,7 @@ function QuestionDetailPage() {
                     <div className="h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-[var(--orange)]" />
                   </div>
                 ) : answer?.gif_url ? (
-                  <img
-                    src={answer.gif_url}
-                    alt="GIF answer"
-                    className="w-full object-cover"
-                  />
+                  <img src={answer.gif_url} alt="GIF answer" className="w-full object-cover" />
                 ) : (
                   <div className="grid aspect-square w-full place-items-center text-7xl">🎞️</div>
                 )}
@@ -111,7 +111,9 @@ function QuestionDetailPage() {
             <div className="rounded-3xl border border-dashed border-border bg-card p-5">
               <div className="mb-3 flex items-center gap-2 text-[var(--orange)]">
                 <Clock className="h-4 w-4" />
-                <span className="text-xs font-bold uppercase tracking-wider">Waiting for your answer</span>
+                <span className="text-xs font-bold uppercase tracking-wider">
+                  Waiting for your answer
+                </span>
               </div>
               <p className="mb-4 text-sm text-muted-foreground">
                 You can't reply with text. Record a 5-second GIF to answer.

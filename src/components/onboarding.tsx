@@ -25,7 +25,9 @@ function markDone() {
     if (typeof window !== "undefined") {
       window.localStorage.setItem(STORAGE_KEY, "1");
     }
-  } catch {}
+  } catch {
+    // ignore — localStorage unavailable (private browsing, storage quota)
+  }
 }
 
 export function shouldShowOnboarding(): boolean {

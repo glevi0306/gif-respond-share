@@ -94,13 +94,17 @@
   * {
     border-color: var(--color-border);
   }
-  html, body {
+  html,
+  body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, h4 {
+  h1,
+  h2,
+  h3,
+  h4 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
   }
@@ -124,106 +128,235 @@
   border-radius: 9999px;
   padding: 0.875rem 1.5rem;
   font-weight: 600;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    opacity 0.15s ease;
   @variant dark {
     border: 1px solid var(--orange);
     box-shadow: 0 0 0 1px color-mix(in oklch, var(--orange) 60%, transparent);
   }
 }
 @utility btn-black {
-  &:hover { opacity: 0.9; }
-  &:active { transform: scale(0.97); }
+  &:hover {
+    opacity: 0.9;
+  }
+  &:active {
+    transform: scale(0.97);
+  }
 }
 
 @keyframes pop-in {
-  0% { opacity: 0; transform: scale(0.95) translateY(8px); }
-  100% { opacity: 1; transform: scale(1) translateY(0); }
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 @keyframes pulse-ring {
-  0% { box-shadow: 0 0 0 0 rgba(255,122,0,0.55); }
-  100% { box-shadow: 0 0 0 24px rgba(255,122,0,0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 122, 0, 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 24px rgba(255, 122, 0, 0);
+  }
 }
-.animate-pop-in { animation: pop-in 0.35s cubic-bezier(0.22,1,0.36,1) both; }
-.animate-pulse-ring { animation: pulse-ring 1.4s ease-out infinite; }
+.animate-pop-in {
+  animation: pop-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-pulse-ring {
+  animation: pulse-ring 1.4s ease-out infinite;
+}
 
 @keyframes gif-appear {
-  from { opacity: 0; transform: scale(0.92); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 @keyframes modal-spring {
-  0%   { opacity: 0; transform: scale(0.88); }
-  60%  { opacity: 1; transform: scale(1.03); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 @keyframes overlay-fade {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes bubble-left {
-  from { opacity: 0; transform: translateX(-10px) scale(0.96); }
-  to   { opacity: 1; transform: translateX(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateX(-10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
 }
 @keyframes bubble-right {
-  from { opacity: 0; transform: translateX(10px) scale(0.96); }
-  to   { opacity: 1; transform: translateX(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateX(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
 }
-.animate-gif-appear   { animation: gif-appear   0.4s  cubic-bezier(0.34,1.56,0.64,1) both; }
-.animate-modal-spring { animation: modal-spring 0.45s cubic-bezier(0.22,1,0.36,1)    both; }
-.animate-overlay-fade { animation: overlay-fade 0.2s  ease                            both; }
-.animate-bubble-left  { animation: bubble-left  0.35s cubic-bezier(0.22,1,0.36,1)    both; }
-.animate-bubble-right { animation: bubble-right 0.35s cubic-bezier(0.22,1,0.36,1)    both; }
+.animate-gif-appear {
+  animation: gif-appear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.animate-modal-spring {
+  animation: modal-spring 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-overlay-fade {
+  animation: overlay-fade 0.2s ease both;
+}
+.animate-bubble-left {
+  animation: bubble-left 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-bubble-right {
+  animation: bubble-right 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
 
 @keyframes reaction-pop {
-  0%   { transform: scale(0.8); }
-  60%  { transform: scale(1.15); }
-  100% { transform: scale(1.0); }
+  0% {
+    transform: scale(0.8);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 @keyframes slide-up {
-  from { transform: translateY(100%); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 @keyframes save-pulse {
-  0%   { transform: scale(1); }
-  40%  { transform: scale(1.08); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
-.animate-reaction-pop { animation: reaction-pop 0.15s cubic-bezier(0.34,1.56,0.64,1) both; }
-.animate-slide-up     { animation: slide-up     0.35s cubic-bezier(0.22,1,0.36,1)    both; }
-.animate-save-pulse   { animation: save-pulse   0.3s  cubic-bezier(0.22,1,0.36,1)    both; }
+.animate-reaction-pop {
+  animation: reaction-pop 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.animate-slide-up {
+  animation: slide-up 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-save-pulse {
+  animation: save-pulse 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
 
 /* Incoming GIF bubble — slides up with spring */
 @keyframes gif-reveal {
-  from { opacity: 0; transform: translateY(12px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 /* New question bubble — gentle slide up, no bounce */
 @keyframes question-reveal {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0);   }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 /* Category emoji pop: 0.8 → 1.15 → 1.0 in ~140ms */
 @keyframes cat-pop {
-  0%   { transform: scale(0.8);  }
-  55%  { transform: scale(1.15); }
-  100% { transform: scale(1.0);  }
+  0% {
+    transform: scale(0.8);
+  }
+  55% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 /* Countdown digit: expand in, then shrink out */
 @keyframes countdown-pop {
-  0%   { opacity: 0; transform: scale(1.4); }
-  20%  { opacity: 1; transform: scale(1.0); }
-  80%  { opacity: 1; transform: scale(1.0); }
-  100% { opacity: 0; transform: scale(0.7); }
+  0% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
 }
 /* Splash fade-in */
 @keyframes splash-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
-.animate-gif-reveal      { animation: gif-reveal      0.45s cubic-bezier(0.22,1,0.36,1)    both; }
-.animate-question-reveal { animation: question-reveal 0.28s ease-out                        both; }
-.animate-cat-pop         { animation: cat-pop         0.14s cubic-bezier(0.34,1.56,0.64,1) both; }
-.animate-countdown       { animation: countdown-pop   0.9s  ease                            both; }
-.animate-splash-in       { animation: splash-in       0.3s  ease                            both; }
+.animate-gif-reveal {
+  animation: gif-reveal 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-question-reveal {
+  animation: question-reveal 0.28s ease-out both;
+}
+.animate-cat-pop {
+  animation: cat-pop 0.14s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.animate-countdown {
+  animation: countdown-pop 0.9s ease both;
+}
+.animate-splash-in {
+  animation: splash-in 0.3s ease both;
+}
 
 /* Modal exit — shrinks and drifts toward the originating GIF bubble,
    like the fullscreen view returning into its chat tile.
@@ -231,26 +364,48 @@
    cubic-bezier(0.4,0,1,1) = Material ease-in: slow start → fast end,
    so the card "snaps back" rather than drifting lazily. */
 @keyframes modal-close-left {
-  from { opacity: 1; transform: scale(1)    translate(0,     0);   }
-  to   { opacity: 0; transform: scale(0.75) translate(-40px, 24px); }
+  from {
+    opacity: 1;
+    transform: scale(1) translate(0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.75) translate(-40px, 24px);
+  }
 }
 @keyframes modal-close-right {
-  from { opacity: 1; transform: scale(1)    translate(0,    0);   }
-  to   { opacity: 0; transform: scale(0.75) translate(40px, 24px); }
+  from {
+    opacity: 1;
+    transform: scale(1) translate(0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.75) translate(40px, 24px);
+  }
 }
 @keyframes overlay-fade-out {
-  from { opacity: 1; }
-  to   { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
-.animate-modal-close-left  { animation: modal-close-left  320ms cubic-bezier(0.4,0,1,1) forwards; }
-.animate-modal-close-right { animation: modal-close-right 320ms cubic-bezier(0.4,0,1,1) forwards; }
-.animate-overlay-fade-out  { animation: overlay-fade-out  320ms ease                    forwards; }
+.animate-modal-close-left {
+  animation: modal-close-left 320ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+.animate-modal-close-right {
+  animation: modal-close-right 320ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+.animate-overlay-fade-out {
+  animation: overlay-fade-out 320ms ease forwards;
+}
 
 /* Subtle paper texture for chat background: 2-3% noise + soft bottom gradient */
 @utility chat-paper-bg {
   background-color: var(--color-background);
   background-image:
-    linear-gradient(180deg, transparent 75%, rgba(0,0,0,0.014) 100%),
+    linear-gradient(180deg, transparent 75%, rgba(0, 0, 0, 0.014) 100%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
 }
 
@@ -259,5 +414,8 @@
 .theme-transition *,
 .theme-transition *::before,
 .theme-transition *::after {
-  transition: background-color 250ms ease, border-color 250ms ease, color 250ms ease !important;
+  transition:
+    background-color 250ms ease,
+    border-color 250ms ease,
+    color 250ms ease !important;
 }

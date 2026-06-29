@@ -15,13 +15,7 @@ import {
 
 type Profile = { id: string; username: string; avatar_emoji: string; avatar_url: string | null };
 
-export function FindFriendsSheet({
-  isOpen,
-  onClose,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-}) {
+export function FindFriendsSheet({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { user } = useAuth();
   const [query, setQuery] = useState("");
 
@@ -47,7 +41,10 @@ export function FindFriendsSheet({
 
   // Per-user status map: otherId → { id, status, isSender }
   const statusMap = useMemo(() => {
-    const map = new Map<string, { id: string; status: FriendshipRow["status"]; isSender: boolean }>();
+    const map = new Map<
+      string,
+      { id: string; status: FriendshipRow["status"]; isSender: boolean }
+    >();
     for (const f of allFriendships) {
       if (f.user_id === user?.id) {
         map.set(f.friend_id, { id: f.id, status: f.status, isSender: true });
@@ -75,7 +72,6 @@ export function FindFriendsSheet({
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} title="Friends">
       <div className="space-y-4">
-
         {/* ── Incoming friend requests ─────────────────────────── */}
         {requests.length > 0 && (
           <div className="space-y-2">
@@ -132,7 +128,10 @@ export function FindFriendsSheet({
           {profilesLoading && (
             <>
               {[0, 1, 2].map((i) => (
-                <div key={i} className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5">
+                <div
+                  key={i}
+                  className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5"
+                >
                   <div className="h-11 w-11 animate-pulse rounded-full bg-muted" />
                   <div className="h-3.5 w-1/3 animate-pulse rounded-full bg-muted" />
                 </div>

@@ -4,7 +4,7 @@ import { compactTime } from "../hooks/use-questions";
 import { UserAvatar } from "./user-avatar";
 
 const RIGHT_RADIUS = "18px 18px 4px 18px";
-const LEFT_RADIUS  = "18px 18px 18px 4px";
+const LEFT_RADIUS = "18px 18px 18px 4px";
 
 // ── ChatBubble ────────────────────────────────────────────────
 
@@ -17,13 +17,18 @@ export interface ChatBubbleProps {
   avatarUrl?: string | null;
 }
 
-export function ChatBubble({ variant, text, createdAt, isRight, avatarEmoji, avatarUrl }: ChatBubbleProps) {
+export function ChatBubble({
+  variant,
+  text,
+  createdAt,
+  isRight,
+  avatarEmoji,
+  avatarUrl,
+}: ChatBubbleProps) {
   const isDeleted = variant === "deleted";
   return (
     <div className={`flex items-end gap-2 ${isRight ? "justify-end" : "justify-start"}`}>
-      {!isRight && (
-        <UserAvatar avatarUrl={avatarUrl} avatarEmoji={avatarEmoji ?? "🙂"} size={28} />
-      )}
+      {!isRight && <UserAvatar avatarUrl={avatarUrl} avatarEmoji={avatarEmoji ?? "🙂"} size={28} />}
       <div
         className={`flex max-w-[75%] flex-col gap-1 animate-question-reveal ${
           isRight ? "items-end" : "items-start"
@@ -40,13 +45,9 @@ export function ChatBubble({ variant, text, createdAt, isRight, avatarEmoji, ava
             boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 0.5px 1px rgba(0,0,0,0.04)",
           }}
         >
-          <p className={`text-sm ${isDeleted ? "italic" : "font-medium"} leading-snug`}>
-            {text}
-          </p>
+          <p className={`text-sm ${isDeleted ? "italic" : "font-medium"} leading-snug`}>{text}</p>
         </div>
-        <p className="px-1 text-[10px] text-muted-foreground/60">
-          {compactTime(createdAt)} ago
-        </p>
+        <p className="px-1 text-[10px] text-muted-foreground/60">{compactTime(createdAt)} ago</p>
       </div>
     </div>
   );
@@ -64,12 +65,18 @@ export interface GifBubbleProps {
   onTap: () => void;
 }
 
-export function GifBubble({ gifUrl, createdAt, isRight, avatarEmoji, avatarUrl, reactionEmoji, onTap }: GifBubbleProps) {
+export function GifBubble({
+  gifUrl,
+  createdAt,
+  isRight,
+  avatarEmoji,
+  avatarUrl,
+  reactionEmoji,
+  onTap,
+}: GifBubbleProps) {
   return (
     <div className={`flex items-end gap-2 ${isRight ? "justify-end" : "justify-start"}`}>
-      {!isRight && (
-        <UserAvatar avatarUrl={avatarUrl} avatarEmoji={avatarEmoji ?? "🙂"} size={28} />
-      )}
+      {!isRight && <UserAvatar avatarUrl={avatarUrl} avatarEmoji={avatarEmoji ?? "🙂"} size={28} />}
       <div
         className={`flex max-w-[75%] flex-col gap-1 animate-gif-reveal ${
           isRight ? "items-end" : "items-start"

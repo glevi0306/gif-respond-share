@@ -1,7 +1,12 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Home, MessageCirclePlus, Video, Library, User, type LucideIcon } from "lucide-react";
 
-type Tab = { to: "/home" | "/ask" | "/record" | "/library" | "/profile"; icon: LucideIcon; label: string; primary?: boolean };
+type Tab = {
+  to: "/home" | "/ask" | "/record" | "/library" | "/profile";
+  icon: LucideIcon;
+  label: string;
+  primary?: boolean;
+};
 
 const tabs: Tab[] = [
   { to: "/home", icon: Home, label: "Home" },

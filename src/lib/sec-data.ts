@@ -39,11 +39,44 @@ export type Question = {
 };
 
 export const QUESTIONS: Question[] = [
-  { id: "q1", from: FRIENDS[0], text: "What are you doing right now?", receivedAt: "2m", status: "waiting" },
-  { id: "q2", from: FRIENDS[1], text: "Are you coming tonight?", receivedAt: "12m", status: "waiting" },
-  { id: "q3", from: FRIENDS[3], text: "How was your exam?", receivedAt: "1h", status: "answered", gifThumb: "🎉" },
-  { id: "q4", from: FRIENDS[5], text: "Where are you?", receivedAt: "3h", status: "answered", gifThumb: "🤷" },
-  { id: "q5", from: FRIENDS[7], text: "Coffee in 10?", receivedAt: "5h", status: "answered", gifThumb: "☕" },
+  {
+    id: "q1",
+    from: FRIENDS[0],
+    text: "What are you doing right now?",
+    receivedAt: "2m",
+    status: "waiting",
+  },
+  {
+    id: "q2",
+    from: FRIENDS[1],
+    text: "Are you coming tonight?",
+    receivedAt: "12m",
+    status: "waiting",
+  },
+  {
+    id: "q3",
+    from: FRIENDS[3],
+    text: "How was your exam?",
+    receivedAt: "1h",
+    status: "answered",
+    gifThumb: "🎉",
+  },
+  {
+    id: "q4",
+    from: FRIENDS[5],
+    text: "Where are you?",
+    receivedAt: "3h",
+    status: "answered",
+    gifThumb: "🤷",
+  },
+  {
+    id: "q5",
+    from: FRIENDS[7],
+    text: "Coffee in 10?",
+    receivedAt: "5h",
+    status: "answered",
+    gifThumb: "☕",
+  },
 ];
 
 export const RECENT_ANSWERS = [
@@ -54,13 +87,13 @@ export const RECENT_ANSWERS = [
 ];
 
 export const GIF_CATEGORIES = [
-  { key: "funny",       label: "Funny",       emoji: "😂" },
-  { key: "yes",         label: "Yes",         emoji: "👍" },
-  { key: "no",          label: "No",          emoji: "👎" },
+  { key: "funny", label: "Funny", emoji: "😂" },
+  { key: "yes", label: "Yes", emoji: "👍" },
+  { key: "no", label: "No", emoji: "👎" },
   { key: "celebration", label: "Celebration", emoji: "🎉" },
-  { key: "wtf",         label: "WTF",         emoji: "😳" },
-  { key: "tired",       label: "Tired",       emoji: "😴" },
-  { key: "other",       label: "Other",       emoji: "✨" },
+  { key: "wtf", label: "WTF", emoji: "😳" },
+  { key: "tired", label: "Tired", emoji: "😴" },
+  { key: "other", label: "Other", emoji: "✨" },
 ] as const;
 
 export type GifItem = { id: string; emoji: string; category: string; date: string };

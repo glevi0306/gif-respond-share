@@ -17,9 +17,31 @@ export const Route = createFileRoute("/profile")({
 });
 
 const EMOJI_PRESETS = [
-  "😊","😂","🥰","😎","🤩","🥳","😋","🤪","🙄","😤",
-  "🥺","😇","🤓","😴","🥸","🤔","😈","👻","🐱","🦊",
-  "🐸","🌸","⭐","🔥","💎",
+  "😊",
+  "😂",
+  "🥰",
+  "😎",
+  "🤩",
+  "🥳",
+  "😋",
+  "🤪",
+  "🙄",
+  "😤",
+  "🥺",
+  "😇",
+  "🤓",
+  "😴",
+  "🥸",
+  "🤔",
+  "😈",
+  "👻",
+  "🐱",
+  "🦊",
+  "🐸",
+  "🌸",
+  "⭐",
+  "🔥",
+  "💎",
 ];
 
 type StatsRow = { gif_count: number; questions_asked: number; questions_answered: number };
@@ -46,8 +68,15 @@ function ProfilePage() {
     queryFn: async () => {
       const [gifsRes, askedRes, answeredRes] = await Promise.all([
         supabase.from("gifs").select("id", { count: "exact", head: true }).eq("user_id", user!.id),
-        supabase.from("questions").select("id", { count: "exact", head: true }).eq("from_id", user!.id),
-        supabase.from("answers").select("id", { count: "exact", head: true }).eq("responder_id", user!.id).eq("is_deleted", false),
+        supabase
+          .from("questions")
+          .select("id", { count: "exact", head: true })
+          .eq("from_id", user!.id),
+        supabase
+          .from("answers")
+          .select("id", { count: "exact", head: true })
+          .eq("responder_id", user!.id)
+          .eq("is_deleted", false),
       ]);
       return {
         gif_count: gifsRes.count ?? 0,
@@ -93,7 +122,9 @@ function ProfilePage() {
         .upload(path, blob, { contentType: "image/png", upsert: true });
       if (storageErr) throw storageErr;
 
-      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("avatars").getPublicUrl(path);
       // Cache-bust so the browser fetches the new photo, not a stale cached one
       const avatarUrl = `${publicUrl}?t=${Date.now()}`;
 
@@ -146,7 +177,9 @@ function ProfilePage() {
       queryClient.invalidateQueries({ queryKey: ["chats"] });
       setEditingUsername(false);
     } catch (err) {
-      setUsernameError(friendlyAuthError(err instanceof Error ? err.message : "Could not save username."));
+      setUsernameError(
+        friendlyAuthError(err instanceof Error ? err.message : "Could not save username."),
+      );
     } finally {
       setSavingUsername(false);
     }
@@ -174,7 +207,10 @@ function ProfilePage() {
       >
         <div className="mt-4 flex flex-col items-center gap-2">
           <button
-            onClick={() => { setShowEmojiPicker(false); setSheetOpen(true); }}
+            onClick={() => {
+              setShowEmojiPicker(false);
+              setSheetOpen(true);
+            }}
             className="rounded-full ring-4 ring-white/30 active:opacity-75"
             aria-label="Edit avatar"
           >
@@ -201,10 +237,16 @@ function ProfilePage() {
 
         <div className="mt-4 rounded-2xl border border-border bg-card p-4">
           <div className="mb-1 flex items-center justify-between">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Username</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Username
+            </p>
             {!editingUsername && (
               <button
-                onClick={() => { setUsernameValue(username); setUsernameError(null); setEditingUsername(true); }}
+                onClick={() => {
+                  setUsernameValue(username);
+                  setUsernameError(null);
+                  setEditingUsername(true);
+                }}
                 className="flex items-center gap-1 text-xs text-muted-foreground active:opacity-70"
                 aria-label="Edit username"
               >
@@ -229,15 +271,16 @@ function ProfilePage() {
                 maxLength={20}
                 className={`w-full rounded-xl border bg-background px-3 py-2.5 text-sm outline-none focus:border-foreground disabled:opacity-60 ${usernameError ? "border-red-400" : "border-border"}`}
               />
-              {usernameError && (
-                <p className="text-xs text-red-500">{usernameError}</p>
-              )}
+              {usernameError && <p className="text-xs text-red-500">{usernameError}</p>}
               {!usernameError && (
                 <p className="text-xs text-muted-foreground">3–20 chars · lowercase, numbers, _</p>
               )}
               <div className="flex gap-2 pt-1">
                 <button
-                  onClick={() => { setEditingUsername(false); setUsernameError(null); }}
+                  onClick={() => {
+                    setEditingUsername(false);
+                    setUsernameError(null);
+                  }}
                   disabled={savingUsername}
                   className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-border py-2.5 text-sm font-semibold disabled:opacity-50"
                 >
@@ -259,7 +302,9 @@ function ProfilePage() {
 
         {recentGifs.length > 0 && (
           <div className="mt-6">
-            <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Recent GIFs</h3>
+            <h3 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">
+              Recent GIFs
+            </h3>
             <div className="grid grid-cols-4 gap-2">
               {recentGifs.map((g) => (
                 <div key={g.id} className="aspect-square overflow-hidden rounded-xl bg-muted">
@@ -296,7 +341,10 @@ function ProfilePage() {
       {/* Avatar options bottom sheet */}
       <BottomSheet
         isOpen={sheetOpen}
-        onClose={() => { setSheetOpen(false); setShowEmojiPicker(false); }}
+        onClose={() => {
+          setSheetOpen(false);
+          setShowEmojiPicker(false);
+        }}
         title={showEmojiPicker ? "Choose Emoji" : "Avatar"}
       >
         {showEmojiPicker ? (
@@ -366,7 +414,9 @@ function Stat({ label, value }: { label: string; value: number | undefined }) {
       <p className="text-xl font-extrabold">
         {value === undefined ? (
           <span className="inline-block h-5 w-8 animate-pulse rounded bg-muted" />
-        ) : value}
+        ) : (
+          value
+        )}
       </p>
       <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
     </div>

@@ -29,7 +29,9 @@ function NotFoundComponent() {
           The page you're looking for doesn't exist or has been moved.
         </p>
         <div className="mt-6">
-          <Link to="/" className="btn-black inline-flex">Go home</Link>
+          <Link to="/" className="btn-black inline-flex">
+            Go home
+          </Link>
         </div>
       </div>
     </div>
@@ -46,13 +48,20 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">This page didn't load</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          This page didn't load
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">Something went wrong. Try refreshing.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => { router.invalidate(); reset(); }}
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
             className="btn-black"
-          >Try again</button>
+          >
+            Try again
+          </button>
         </div>
       </div>
     </div>
@@ -66,7 +75,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#FF7A00" },
       { title: "Sec. — Ask anything. Answer with a GIF." },
-      { name: "description", content: "Sec. is a mobile-first social app: ask friends anything, answer with a 5-second GIF." },
+      {
+        name: "description",
+        content:
+          "Sec. is a mobile-first social app: ask friends anything, answer with a 5-second GIF.",
+      },
       { property: "og:title", content: "Sec. — Ask anything. Answer with a GIF." },
       { property: "og:description", content: "Ask friends anything. Answer with a 5-second GIF." },
       { property: "og:type", content: "website" },
@@ -81,7 +94,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap",
+      },
       { rel: "manifest", href: "/manifest.webmanifest" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
     ],
@@ -151,18 +167,16 @@ function AppShell() {
       setTimeout(() => setSplashHidden(true), 220);
     };
     // Show for at least 500ms so returning users don't see a flash
-    const minTimer = setTimeout(() => { if (!loadingRef.current) dismiss(); }, 500);
+    const minTimer = setTimeout(() => {
+      if (!loadingRef.current) dismiss();
+    }, 500);
     // Hard cap: never hang longer than 900ms total
     const maxTimer = setTimeout(dismiss, 900);
-    return () => { clearTimeout(minTimer); clearTimeout(maxTimer); };
+    return () => {
+      clearTimeout(minTimer);
+      clearTimeout(maxTimer);
+    };
   }, []);
-
-  useEffect(() => {
-    if (!loading) {
-      const t = setTimeout(() => {}, 0);
-      return () => clearTimeout(t);
-    }
-  }, [loading]);
 
   // Show onboarding once per device for new authenticated users
   useEffect(() => {
@@ -203,9 +217,7 @@ function AppShell() {
   return (
     <>
       {mainContent}
-      {showOnboarding && (
-        <Onboarding onDone={() => setShowOnboarding(false)} />
-      )}
+      {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
       {!splashHidden && (
         <div
           className="fixed inset-0 z-[200] flex flex-col items-center justify-center animate-splash-in"

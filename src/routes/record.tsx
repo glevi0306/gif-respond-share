@@ -35,7 +35,12 @@ const HOLD_THRESHOLD_MS = 350;
 const BORDER_STROKE = 2.5;
 const BORDER_RX = 28; // matches rounded-3xl
 
-type ProfileRow = { id: string; username: string; avatar_emoji: string; avatar_url?: string | null };
+type ProfileRow = {
+  id: string;
+  username: string;
+  avatar_emoji: string;
+  avatar_url?: string | null;
+};
 
 function RecordPage() {
   const { questionId } = Route.useSearch();
@@ -49,9 +54,10 @@ function RecordPage() {
   const [gifUrl, setGifUrl] = useState<string | null>(null);
   const [facing, setFacing] = useState<"user" | "environment">(() => {
     try {
-      const stored = typeof window !== "undefined"
-        ? window.localStorage.getItem("sec.preferredCameraFacingMode")
-        : null;
+      const stored =
+        typeof window !== "undefined"
+          ? window.localStorage.getItem("sec.preferredCameraFacingMode")
+          : null;
       return stored === "environment" ? "environment" : "user";
     } catch {
       return "user";
@@ -184,7 +190,11 @@ function RecordPage() {
     setPhase("encoding");
     setEncodeProgress(0);
     const frames = framesRef.current;
-    if (frames.length === 0) { setError("No frames captured."); setPhase("idle"); return; }
+    if (frames.length === 0) {
+      setError("No frames captured.");
+      setPhase("idle");
+      return;
+    }
     const gif = GIFEncoder();
     const delay = Math.round(1000 / FPS);
     for (let i = 0; i < frames.length; i++) {
@@ -221,7 +231,10 @@ function RecordPage() {
     const video = videoRef.current!;
     if (video.readyState < 2) {
       await new Promise<void>((res) => {
-        const on = () => { video.removeEventListener("loadeddata", on); res(); };
+        const on = () => {
+          video.removeEventListener("loadeddata", on);
+          res();
+        };
         video.addEventListener("loadeddata", on);
       });
     }
@@ -230,7 +243,7 @@ function RecordPage() {
 
     // GIF canvas matches the 3:4 preview container so the output equals what the user saw.
     const targetW = GIF_WIDTH;
-    const targetH = Math.round(GIF_WIDTH * 4 / 3); // 480 — mirrors aspect-[3/4] container
+    const targetH = Math.round((GIF_WIDTH * 4) / 3); // 480 — mirrors aspect-[3/4] container
 
     // Replicate CSS object-cover center-crop: scale the video until it covers the 3:4 frame,
     // then sample only the visible center region.
@@ -256,7 +269,10 @@ function RecordPage() {
     canvas.height = targetH;
     canvasRef.current = canvas;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    if (!ctx) { setError("Canvas not available."); return; }
+    if (!ctx) {
+      setError("Canvas not available.");
+      return;
+    }
 
     framesRef.current = [];
     recordingStartedAtRef.current = Date.now();
@@ -268,8 +284,11 @@ function RecordPage() {
     captureTimerRef.current = setInterval(() => {
       if (framesRef.current.length >= TOTAL_FRAMES) return;
       if (facing === "user") {
-        ctx.save(); ctx.translate(targetW, 0); ctx.scale(-1, 1);
-        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH); ctx.restore();
+        ctx.save();
+        ctx.translate(targetW, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
+        ctx.restore();
       } else {
         ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
       }
@@ -386,7 +405,11 @@ function RecordPage() {
     setBackCameraError(null);
     setIsSwitching(true);
     setCameraOpacity(0);
-    try { window.localStorage.setItem("sec.preferredCameraFacingMode", next); } catch {}
+    try {
+      window.localStorage.setItem("sec.preferredCameraFacingMode", next);
+    } catch {
+      // ignore — localStorage unavailable
+    }
     setFacing(next);
   };
 
@@ -424,7 +447,9 @@ function RecordPage() {
       });
     if (storageErr) throw storageErr;
 
-    const { data: { publicUrl } } = supabase.storage.from("gifs").getPublicUrl(storagePath);
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("gifs").getPublicUrl(storagePath);
 
     const { data: gifRow, error: gifErr } = await supabase
       .from("gifs")
@@ -437,7 +462,10 @@ function RecordPage() {
       .select("id")
       .single();
     if (gifErr) {
-      await supabase.storage.from("gifs").remove([storagePath]).catch(() => {});
+      await supabase.storage
+        .from("gifs")
+        .remove([storagePath])
+        .catch(() => {});
       throw gifErr;
     }
 
@@ -474,7 +502,10 @@ function RecordPage() {
     setPhase("uploading");
     try {
       const { publicUrl, gifId } = await ensureGifSaved();
-      if (!isSaved) { setIsSaved(true); queryClient.invalidateQueries({ queryKey: ["gifs"] }); }
+      if (!isSaved) {
+        setIsSaved(true);
+        queryClient.invalidateQueries({ queryKey: ["gifs"] });
+      }
 
       const { error: ansErr } = await supabase.from("answers").insert({
         question_id: questionId,
@@ -495,13 +526,21 @@ function RecordPage() {
       queryClient.invalidateQueries({ queryKey: ["question", questionId] });
       queryClient.invalidateQueries({ queryKey: ["answer", "for-question", questionId] });
       queryClient.invalidateQueries({ queryKey: ["conv-answers"] });
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
 
       void (async () => {
-        try { await supabase.rpc("increment_gif_usage", { p_gif_id: gifId }); } catch { /* non-critical */ }
+        try {
+          await supabase.rpc("increment_gif_usage", { p_gif_id: gifId });
+        } catch {
+          /* non-critical */
+        }
       })();
 
       setPhase("done");
-      setTimeout(() => { uploadingRef.current = false; navigate({ to: "/home" }); }, 900);
+      setTimeout(() => {
+        uploadingRef.current = false;
+        navigate({ to: "/home" });
+      }, 900);
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : "Send failed. Please try again.");
       setPhase("preview");
@@ -519,7 +558,10 @@ function RecordPage() {
     setPhase("uploading");
     try {
       const { publicUrl, gifId } = await ensureGifSaved();
-      if (!isSaved) { setIsSaved(true); queryClient.invalidateQueries({ queryKey: ["gifs"] }); }
+      if (!isSaved) {
+        setIsSaved(true);
+        queryClient.invalidateQueries({ queryKey: ["gifs"] });
+      }
 
       const { error: dgErr } = await supabase.from("direct_gifs").insert({
         sender_id: user!.id,
@@ -532,7 +574,11 @@ function RecordPage() {
       queryClient.invalidateQueries({ queryKey: ["conv-direct-gifs"] });
 
       void (async () => {
-        try { await supabase.rpc("increment_gif_usage", { p_gif_id: gifId }); } catch { /* non-critical */ }
+        try {
+          await supabase.rpc("increment_gif_usage", { p_gif_id: gifId });
+        } catch {
+          /* non-critical */
+        }
       })();
 
       setPhase("done");
@@ -558,9 +604,10 @@ function RecordPage() {
   const bInset = BORDER_STROKE / 2;
   const bw = containerSize.w > 0 ? containerSize.w - bInset * 2 : 0;
   const bh = containerSize.h > 0 ? containerSize.h - bInset * 2 : 0;
-  const perimeter = bw > 0 && bh > 0
-    ? 2 * (bw - 2 * BORDER_RX) + 2 * (bh - 2 * BORDER_RX) + 2 * Math.PI * BORDER_RX
-    : 0;
+  const perimeter =
+    bw > 0 && bh > 0
+      ? 2 * (bw - 2 * BORDER_RX) + 2 * (bh - 2 * BORDER_RX) + 2 * Math.PI * BORDER_RX
+      : 0;
   const dashOffset = perimeter > 0 ? perimeter * (1 - progress) : 0;
 
   // ── Render ────────────────────────────────────────────────
@@ -577,7 +624,9 @@ function RecordPage() {
           {/* Always in DOM so videoRef is valid when reset() calls startCamera() */}
           <video
             ref={videoRef}
-            playsInline muted autoPlay
+            playsInline
+            muted
+            autoPlay
             className={`absolute inset-0 h-full w-full object-cover ${!showCamera ? "hidden" : ""}`}
             style={{
               transform: facing === "user" ? "scaleX(-1)" : undefined,
@@ -599,7 +648,9 @@ function RecordPage() {
               <div>
                 <AlertCircle className="mx-auto mb-3 h-10 w-10 text-[var(--orange)]" />
                 <p className="text-sm font-medium">{error}</p>
-                <p className="mt-2 text-xs text-white/60">Allow camera access in your browser settings.</p>
+                <p className="mt-2 text-xs text-white/60">
+                  Allow camera access in your browser settings.
+                </p>
               </div>
             </div>
           )}
@@ -644,7 +695,9 @@ function RecordPage() {
               <div className="text-center text-white">
                 <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-[var(--orange)]" />
                 <p className="text-sm font-semibold">Creating GIF…</p>
-                <p className="mt-1 text-xs text-white/70 tabular-nums">{Math.round(encodeProgress * 100)}%</p>
+                <p className="mt-1 text-xs text-white/70 tabular-nums">
+                  {Math.round(encodeProgress * 100)}%
+                </p>
               </div>
             </div>
           )}
@@ -704,9 +757,7 @@ function RecordPage() {
                 strokeDasharray={perimeter}
                 strokeDashoffset={dashOffset}
                 style={{
-                  transition: borderVisible
-                    ? "stroke-dashoffset 75ms linear"
-                    : "none",
+                  transition: borderVisible ? "stroke-dashoffset 75ms linear" : "none",
                 }}
               />
             </svg>
@@ -758,7 +809,9 @@ function RecordPage() {
                   }`}
                 >
                   {isSaved ? (
-                    <><CheckCircle2 className="h-4 w-4" /> Saved</>
+                    <>
+                      <CheckCircle2 className="h-4 w-4" /> Saved
+                    </>
                   ) : (
                     "Save"
                   )}
@@ -801,11 +854,7 @@ function RecordPage() {
       </div>
 
       {/* Friend-picker sheet — only when no questionId */}
-      <BottomSheet
-        isOpen={showSendSheet}
-        onClose={() => setShowSendSheet(false)}
-        title="Send GIF"
-      >
+      <BottomSheet isOpen={showSendSheet} onClose={() => setShowSendSheet(false)} title="Send GIF">
         <div className="space-y-2 max-h-[60vh] overflow-y-auto">
           {allProfiles.length === 0 && (
             <p className="py-6 text-center text-sm text-muted-foreground">

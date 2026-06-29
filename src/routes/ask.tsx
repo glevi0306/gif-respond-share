@@ -18,7 +18,12 @@ export const Route = createFileRoute("/ask")({
   component: AskPage,
 });
 
-type SearchProfile = { id: string; username: string; avatar_emoji: string; avatar_url?: string | null };
+type SearchProfile = {
+  id: string;
+  username: string;
+  avatar_emoji: string;
+  avatar_url?: string | null;
+};
 
 function AskPage() {
   const { to } = Route.useSearch();
@@ -47,9 +52,7 @@ function AskPage() {
   });
 
   const filtered = query.trim()
-    ? allProfiles.filter((p) =>
-        p.username.toLowerCase().includes(query.toLowerCase()),
-      )
+    ? allProfiles.filter((p) => p.username.toLowerCase().includes(query.toLowerCase()))
     : allProfiles;
 
   const canSend = !!friendId && text.trim().length > 0 && !sendQuestion.isPending;
@@ -73,20 +76,25 @@ function AskPage() {
         <div className="mb-3 flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5">
           <Search className="h-4 w-4 text-muted-foreground" />
           <input
-            value={query} onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search friends" className="w-full bg-transparent text-sm outline-none"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search friends"
+            className="w-full bg-transparent text-sm outline-none"
           />
         </div>
 
         <div className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {filtered.map((f) => (
             <button
-              key={f.id} onClick={() => setFriendId(f.id)}
+              key={f.id}
+              onClick={() => setFriendId(f.id)}
               className={`flex w-16 shrink-0 flex-col items-center gap-1.5 rounded-2xl p-2 transition ${
                 friendId === f.id ? "bg-[var(--orange)]/15" : ""
               }`}
             >
-              <div className={`${friendId === f.id ? "ring-2 ring-[var(--orange)]" : "ring-1 ring-border"} rounded-full`}>
+              <div
+                className={`${friendId === f.id ? "ring-2 ring-[var(--orange)]" : "ring-1 ring-border"} rounded-full`}
+              >
                 <UserAvatar avatarUrl={f.avatar_url} avatarEmoji={f.avatar_emoji} size={56} />
               </div>
               <p className="truncate text-[11px] font-medium">{f.username}</p>
@@ -95,9 +103,12 @@ function AskPage() {
         </div>
 
         <div className="mt-5">
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">Your question</label>
+          <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Your question
+          </label>
           <textarea
-            value={text} onChange={(e) => setText(e.target.value)}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
             placeholder="What are you doing?"
             rows={3}
             className="w-full resize-none rounded-2xl border border-border bg-card p-4 text-base outline-none focus:border-foreground"
@@ -105,10 +116,16 @@ function AskPage() {
         </div>
 
         <div className="mt-3">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Suggestions</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Suggestions
+          </p>
           <div className="flex flex-wrap gap-2">
             {QUESTION_SUGGESTIONS.map((s) => (
-              <button key={s} onClick={() => setText(s)} className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium">
+              <button
+                key={s}
+                onClick={() => setText(s)}
+                className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium"
+              >
                 {s}
               </button>
             ))}

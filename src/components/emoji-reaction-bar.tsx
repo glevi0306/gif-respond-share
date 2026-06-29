@@ -17,8 +17,7 @@ export function EmojiReactionBar({ selectedReaction, onSelect }: EmojiReactionBa
             onClick={() => onSelect(active ? null : emoji)}
             className="text-3xl active:scale-90"
             style={{
-              transition:
-                "transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.15s ease",
+              transition: "transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.15s ease",
               transform: active ? "scale(1.4)" : "scale(1)",
               opacity: selectedReaction && !active ? 0.4 : 1,
             }}

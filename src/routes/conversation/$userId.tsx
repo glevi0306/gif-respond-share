@@ -26,12 +26,10 @@ export const Route = createFileRoute("/conversation/$userId")({
 });
 
 type ViewingGif =
-  | { kind: "answer"; gifUrl: string; createdAt: string; answerId: string;    isOwner: boolean }
+  | { kind: "answer"; gifUrl: string; createdAt: string; answerId: string; isOwner: boolean }
   | { kind: "direct"; gifUrl: string; createdAt: string; directGifId: string; isOwner: boolean };
 
-type TimelineItem =
-  | { kind: "question"; q: ConvQuestion }
-  | { kind: "direct";   d: DirectGifRow };
+type TimelineItem = { kind: "question"; q: ConvQuestion } | { kind: "direct"; d: DirectGifRow };
 
 // ── Page ─────────────────────────────────────────────────────
 
@@ -42,13 +40,14 @@ function ConversationPage() {
 
   const { data: thread = [], isLoading, error } = useConversation(partnerId);
   const { data: answersById = {} } = useAnswersForConversation(partnerId);
-  const { data: reactionsData = { byAnswerId: {}, byDirectGifId: {} } } = useReactionsForConversation(partnerId);
+  const { data: reactionsData = { byAnswerId: {}, byDirectGifId: {} } } =
+    useReactionsForConversation(partnerId);
   const { byAnswerId: reactionsById, byDirectGifId: reactionsByDirectGifId } = reactionsData;
   const { data: directGifs = [] } = useDirectGifsForConversation(partnerId);
 
-  const upsertReaction   = useUpsertReaction();
-  const removeReaction   = useRemoveReaction();
-  const softDelete       = useSoftDeleteAnswer();
+  const upsertReaction = useUpsertReaction();
+  const removeReaction = useRemoveReaction();
+  const softDelete = useSoftDeleteAnswer();
   const softDeleteDirect = useSoftDeleteDirectGif();
 
   const [viewingGif, setViewingGif] = useState<ViewingGif | null>(null);
@@ -59,7 +58,9 @@ function ConversationPage() {
   useEffect(() => {
     if (viewingGif) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [viewingGif]);
 
   // Track scroll position to avoid disrupting manual upward scroll
@@ -267,12 +268,12 @@ function ConversationPage() {
             viewingGif.isOwner
               ? null
               : viewingGif.kind === "answer"
-              ? (reactionsById[viewingGif.answerId]?.user_id === user?.id
+                ? reactionsById[viewingGif.answerId]?.user_id === user?.id
                   ? (reactionsById[viewingGif.answerId]?.emoji ?? null)
-                  : null)
-              : (reactionsByDirectGifId[viewingGif.directGifId]?.user_id === user?.id
+                  : null
+                : reactionsByDirectGifId[viewingGif.directGifId]?.user_id === user?.id
                   ? (reactionsByDirectGifId[viewingGif.directGifId]?.emoji ?? null)
-                  : null)
+                  : null
           }
           onClose={() => setViewingGif(null)}
           onDelete={() => {

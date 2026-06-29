@@ -65,13 +65,9 @@ export function GifModal({
     }
   };
 
-  const overlayClass = closing
-    ? "animate-overlay-fade-out"
-    : "animate-overlay-fade";
+  const overlayClass = closing ? "animate-overlay-fade-out" : "animate-overlay-fade";
 
-  const cardClass = closing
-    ? `animate-modal-close-${originSide}`
-    : "animate-modal-spring";
+  const cardClass = closing ? `animate-modal-close-${originSide}` : "animate-modal-spring";
 
   return (
     <div
@@ -87,10 +83,7 @@ export function GifModal({
         <X className="h-5 w-5" />
       </button>
 
-      <div
-        className={`mx-6 w-full max-w-sm ${cardClass}`}
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className={`mx-6 w-full max-w-sm ${cardClass}`} onClick={(e) => e.stopPropagation()}>
         <p className="mb-3 text-center text-sm font-semibold tracking-wide text-white/70">
           {formatDateTime(createdAt)}
         </p>
@@ -111,8 +104,8 @@ export function GifModal({
         </div>
 
         <div className="mt-5">
-          {actions ?? (
-            isOwner ? (
+          {actions ??
+            (isOwner ? (
               <div className="flex justify-center">
                 <button
                   onClick={onDelete}
@@ -123,8 +116,7 @@ export function GifModal({
               </div>
             ) : allowReactions ? (
               <EmojiReactionBar selectedReaction={currentReaction} onSelect={handleReact} />
-            ) : null
-          )}
+            ) : null)}
         </div>
       </div>
     </div>

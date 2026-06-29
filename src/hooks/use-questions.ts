@@ -62,7 +62,12 @@ export function useReceivedQuestions() {
 // refetchInterval may also be a function receiving the Query object for data-dependent polling.
 export function useQuestion(
   id: string,
-  opts?: { refetchInterval?: number | false | ((query: any) => number | false | undefined) },
+  opts?: {
+    refetchInterval?:
+      | number
+      | false
+      | ((query: { state: { data: unknown } }) => number | false | undefined);
+  },
 ) {
   const { user } = useAuth();
   return useQuery({
@@ -139,8 +144,8 @@ export function useChats() {
         .from("questions")
         .select(
           "id, from_id, to_id, text, status, created_at, " +
-          "sender:profiles!from_id(id, username, avatar_emoji, avatar_url), " +
-          "receiver:profiles!to_id(id, username, avatar_emoji, avatar_url)"
+            "sender:profiles!from_id(id, username, avatar_emoji, avatar_url), " +
+            "receiver:profiles!to_id(id, username, avatar_emoji, avatar_url)",
         )
         .or(`from_id.eq.${user!.id},to_id.eq.${user!.id}`)
         .order("created_at", { ascending: false })
@@ -161,7 +166,7 @@ export function useChats() {
       const seen = new Set<string>();
       const chats: ChatRow[] = [];
 
-      for (const q of (data ?? []) as RawRow[]) {
+      for (const q of (data ?? []) as unknown as RawRow[]) {
         const iSent = q.from_id === user!.id;
         const partnerId = iSent ? q.to_id : q.from_id;
         if (seen.has(partnerId)) continue;
@@ -180,13 +185,20 @@ export function useChats() {
           status = "idle"; // I answered their question, no pending action
         }
 
-        chats.push({ partnerId, partner, lastText: q.text, lastTime: q.created_at, status, questionId: q.id });
+        chats.push({
+          partnerId,
+          partner,
+          lastText: q.text,
+          lastTime: q.created_at,
+          status,
+          questionId: q.id,
+        });
       }
 
       return chats;
     },
     enabled: !!user,
-    staleTime: 0,    // polling queries should always re-fetch on interval
+    staleTime: 0, // polling queries should always re-fetch on interval
     refetchInterval: 15_000,
   });
 }
@@ -201,14 +213,14 @@ export function useConversation(partnerId: string) {
         .from("questions")
         .select(
           "*, " +
-          "sender:profiles!from_id(id, username, avatar_emoji, avatar_url), " +
-          "receiver:profiles!to_id(id, username, avatar_emoji, avatar_url)"
+            "sender:profiles!from_id(id, username, avatar_emoji, avatar_url), " +
+            "receiver:profiles!to_id(id, username, avatar_emoji, avatar_url)",
         )
         .in("from_id", [user!.id, partnerId])
         .in("to_id", [user!.id, partnerId])
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as ConvQuestion[];
+      return (data ?? []) as unknown as ConvQuestion[];
     },
     enabled: !!user && !!partnerId,
     staleTime: 0,
@@ -264,7 +276,7 @@ export function useReactionsForConversation(partnerId: string) {
         .select("id")
         .or(
           `and(sender_id.eq.${user!.id},receiver_id.eq.${partnerId}),` +
-          `and(sender_id.eq.${partnerId},receiver_id.eq.${user!.id})`
+            `and(sender_id.eq.${partnerId},receiver_id.eq.${user!.id})`,
         );
       if (dgErr) throw dgErr;
       const directGifIds = (directGifsData ?? []).map((d: { id: string }) => d.id);
@@ -315,11 +327,17 @@ export function useUpsertReaction() {
     mutationFn: async (args: ReactionTarget & { emoji: string }) => {
       // Delete existing reaction first (partial unique indexes make direct upsert tricky)
       if (args.answerId) {
-        await supabase.from("reactions").delete()
-          .eq("answer_id", args.answerId).eq("user_id", user!.id);
+        await supabase
+          .from("reactions")
+          .delete()
+          .eq("answer_id", args.answerId)
+          .eq("user_id", user!.id);
       } else {
-        await supabase.from("reactions").delete()
-          .eq("direct_gif_id", args.directGifId!).eq("user_id", user!.id);
+        await supabase
+          .from("reactions")
+          .delete()
+          .eq("direct_gif_id", args.directGifId!)
+          .eq("user_id", user!.id);
       }
       const { error } = await supabase.from("reactions").insert({
         answer_id: args.answerId ?? null,
@@ -342,10 +360,16 @@ export function useRemoveReaction() {
   return useMutation({
     mutationFn: async (args: ReactionTarget) => {
       const { error } = args.answerId
-        ? await supabase.from("reactions").delete()
-            .eq("answer_id", args.answerId).eq("user_id", user!.id)
-        : await supabase.from("reactions").delete()
-            .eq("direct_gif_id", args.directGifId!).eq("user_id", user!.id);
+        ? await supabase
+            .from("reactions")
+            .delete()
+            .eq("answer_id", args.answerId)
+            .eq("user_id", user!.id)
+        : await supabase
+            .from("reactions")
+            .delete()
+            .eq("direct_gif_id", args.directGifId!)
+            .eq("user_id", user!.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -384,7 +408,7 @@ export function useDirectGifsForConversation(partnerId: string) {
         .select("id, sender_id, receiver_id, gif_url, is_deleted, created_at")
         .or(
           `and(sender_id.eq.${user!.id},receiver_id.eq.${partnerId}),` +
-          `and(sender_id.eq.${partnerId},receiver_id.eq.${user!.id})`
+            `and(sender_id.eq.${partnerId},receiver_id.eq.${user!.id})`,
         )
         .order("created_at", { ascending: true });
       if (error) throw error;

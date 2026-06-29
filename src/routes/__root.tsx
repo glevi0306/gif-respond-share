@@ -10,6 +10,7 @@ import {
   useRouterState,
 } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Onboarding, shouldShowOnboarding } from "../components/onboarding";
 import Secauthlogo from "../assets/Secauthlogo.png";
 
 import appCss from "../styles.css?url";
@@ -137,6 +138,7 @@ function AppShell() {
   // Visible on first mount. Fades out once auth resolves + min 700ms has passed.
   const [splashHidden, setSplashHidden] = useState(false);
   const [splashFading, setSplashFading] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const loadingRef = useRef(loading);
   loadingRef.current = loading;
 
@@ -161,6 +163,13 @@ function AppShell() {
       return () => clearTimeout(t);
     }
   }, [loading]);
+
+  // Show onboarding once per device for new authenticated users
+  useEffect(() => {
+    if (session && splashHidden && shouldShowOnboarding()) {
+      setShowOnboarding(true);
+    }
+  }, [session, splashHidden]);
 
   // Sync the user's preferred language from their Supabase profile
   useEffect(() => {
@@ -194,6 +203,9 @@ function AppShell() {
   return (
     <>
       {mainContent}
+      {showOnboarding && (
+        <Onboarding onDone={() => setShowOnboarding(false)} />
+      )}
       {!splashHidden && (
         <div
           className="fixed inset-0 z-[200] flex flex-col items-center justify-center animate-splash-in"

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Apple, Chrome } from "lucide-react";
 import { LANGUAGES, type Language } from "../lib/sec-data";
 import { supabase } from "../lib/supabase";
+import { validateUsername, friendlyAuthError } from "../lib/username";
 import Secauthlogo from "../assets/Secauthlogo.png";
 
 export const Route = createFileRoute("/auth")({
@@ -15,6 +16,9 @@ function AuthPage() {
   const [lang, setLang] = useState<Language>("en");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [checkEmail, setCheckEmail] = useState(false);
@@ -23,22 +27,23 @@ function AuthPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (mode === "signup") {
+      setTouched(true);
+      const err = validateUsername(username);
+      setUsernameError(err);
+      if (err) return;
+    }
+
     setSubmitting(true);
 
     try {
       if (mode === "signup") {
-        // Derive a username from the email prefix; the DB trigger will use it
-        const username = email
-          .split("@")[0]
-          .replace(/[^a-z0-9_]/gi, "_")
-          .toLowerCase()
-          .slice(0, 30);
-
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { username, language: lang },
+            data: { username: username.trim(), language: lang },
           },
         });
 
@@ -58,7 +63,7 @@ function AuthPage() {
       // this navigate is a fallback in case the guard fires before re-render.
       navigate({ to: "/home" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setError(friendlyAuthError(err instanceof Error ? err.message : "Something went wrong. Please try again."));
     } finally {
       setSubmitting(false);
     }
@@ -70,7 +75,7 @@ function AuthPage() {
       provider,
       options: { redirectTo: typeof window !== "undefined" ? window.location.origin : undefined },
     });
-    if (error) setError(error.message);
+    if (error) setError(friendlyAuthError(error.message));
   };
 
   // ── Email confirmation screen ────────────────────────────────
@@ -117,7 +122,7 @@ function AuthPage() {
       <div className="px-5 pt-6">
         <div className="mb-5 flex rounded-full bg-muted p-1 text-sm font-semibold">
           <button
-            onClick={() => { setMode("login"); setError(null); }}
+            onClick={() => { setMode("login"); setError(null); setUsernameError(null); setTouched(false); }}
             className={`flex-1 rounded-full py-2 transition ${mode === "login" ? "bg-card shadow text-foreground" : "text-muted-foreground"}`}
           >Log in</button>
           <button
@@ -133,6 +138,33 @@ function AuthPage() {
             disabled={submitting}
             className="w-full rounded-2xl border border-border bg-card px-4 py-3.5 text-sm outline-none focus:border-foreground disabled:opacity-60"
           />
+          {mode === "signup" && (
+            <div>
+              <input
+                type="text"
+                placeholder="Username"
+                required
+                value={username}
+                onChange={(e) => {
+                  const v = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "");
+                  setUsername(v);
+                  if (touched) setUsernameError(validateUsername(v));
+                }}
+                onBlur={() => { setTouched(true); setUsernameError(validateUsername(username)); }}
+                disabled={submitting}
+                autoCapitalize="none"
+                autoCorrect="off"
+                maxLength={20}
+                className={`w-full rounded-2xl border bg-card px-4 py-3.5 text-sm outline-none focus:border-foreground disabled:opacity-60 ${usernameError ? "border-red-400" : "border-border"}`}
+              />
+              {usernameError && (
+                <p className="mt-1.5 px-1 text-xs text-red-500">{usernameError}</p>
+              )}
+              {!usernameError && username.length > 0 && (
+                <p className="mt-1.5 px-1 text-xs text-muted-foreground">Lowercase letters, numbers, and _ only · max 20 chars</p>
+              )}
+            </div>
+          )}
           <input
             type="password" placeholder="Password" required
             value={password} onChange={(e) => setPassword(e.target.value)}

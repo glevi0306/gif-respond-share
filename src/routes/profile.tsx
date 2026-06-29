@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Camera, Settings as SettingsIcon, Smile, Trash2 } from "lucide-react";
+import { Camera, Check, Pencil, Settings as SettingsIcon, Smile, Trash2, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { OrangeHeader } from "../components/orange-header";
@@ -9,6 +9,7 @@ import { UserAvatar } from "../components/user-avatar";
 import { AvatarEditor } from "../components/avatar-editor";
 import { supabase } from "../lib/supabase";
 import { useAuth } from "../lib/auth-context";
+import { validateUsername, friendlyAuthError } from "../lib/username";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({ meta: [{ title: "Profile — Sec." }] }),
@@ -34,6 +35,11 @@ function ProfilePage() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [usernameValue, setUsernameValue] = useState("");
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [savingUsername, setSavingUsername] = useState(false);
 
   const { data: stats } = useQuery<StatsRow>({
     queryKey: ["profile-stats", user?.id],
@@ -124,6 +130,28 @@ function ProfilePage() {
     queryClient.invalidateQueries({ queryKey: ["chats"] });
   };
 
+  const handleSaveUsername = async () => {
+    const err = validateUsername(usernameValue);
+    setUsernameError(err);
+    if (err || !user) return;
+    setSavingUsername(true);
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ username: usernameValue.trim() })
+        .eq("id", user.id);
+      if (error) throw error;
+      await refreshProfile();
+      queryClient.invalidateQueries({ queryKey: ["friends"] });
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
+      setEditingUsername(false);
+    } catch (err) {
+      setUsernameError(friendlyAuthError(err instanceof Error ? err.message : "Could not save username."));
+    } finally {
+      setSavingUsername(false);
+    }
+  };
+
   const avatarEmoji = profile?.avatar_emoji ?? "🙂";
   const avatarUrl = profile?.avatar_url ?? null;
   const username = profile?.username ?? "you";
@@ -169,6 +197,64 @@ function ProfilePage() {
           <Stat label="GIFs" value={stats?.gif_count} />
           <Stat label="Asked" value={stats?.questions_asked} />
           <Stat label="Answered" value={stats?.questions_answered} />
+        </div>
+
+        <div className="mt-4 rounded-2xl border border-border bg-card p-4">
+          <div className="mb-1 flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Username</p>
+            {!editingUsername && (
+              <button
+                onClick={() => { setUsernameValue(username); setUsernameError(null); setEditingUsername(true); }}
+                className="flex items-center gap-1 text-xs text-muted-foreground active:opacity-70"
+                aria-label="Edit username"
+              >
+                <Pencil className="h-3 w-3" /> Edit
+              </button>
+            )}
+          </div>
+
+          {editingUsername ? (
+            <div className="space-y-2">
+              <input
+                type="text"
+                value={usernameValue}
+                onChange={(e) => {
+                  const v = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "");
+                  setUsernameValue(v);
+                  setUsernameError(validateUsername(v));
+                }}
+                disabled={savingUsername}
+                autoCapitalize="none"
+                autoCorrect="off"
+                maxLength={20}
+                className={`w-full rounded-xl border bg-background px-3 py-2.5 text-sm outline-none focus:border-foreground disabled:opacity-60 ${usernameError ? "border-red-400" : "border-border"}`}
+              />
+              {usernameError && (
+                <p className="text-xs text-red-500">{usernameError}</p>
+              )}
+              {!usernameError && (
+                <p className="text-xs text-muted-foreground">3–20 chars · lowercase, numbers, _</p>
+              )}
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => { setEditingUsername(false); setUsernameError(null); }}
+                  disabled={savingUsername}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-border py-2.5 text-sm font-semibold disabled:opacity-50"
+                >
+                  <X className="h-4 w-4" /> Cancel
+                </button>
+                <button
+                  onClick={() => void handleSaveUsername()}
+                  disabled={savingUsername || !!usernameError}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-foreground py-2.5 text-sm font-semibold text-background disabled:opacity-50"
+                >
+                  <Check className="h-4 w-4" /> {savingUsername ? "Saving…" : "Save"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-base font-semibold">@{username}</p>
+          )}
         </div>
 
         {recentGifs.length > 0 && (

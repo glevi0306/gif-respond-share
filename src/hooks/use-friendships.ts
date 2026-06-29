@@ -29,7 +29,13 @@ export function useFriendRequests() {
         .eq("status", "pending")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as FriendRequest[];
+      // Supabase infers joined relations as T[] even for unique FK joins.
+      // Normalise to the scalar form the FriendRequest type expects.
+      return (data ?? []).map((row) => {
+        const raw = row.sender;
+        const sender = Array.isArray(raw) ? raw[0] : raw;
+        return { ...row, sender } as FriendRequest;
+      });
     },
     enabled: !!user,
   });
@@ -71,7 +77,7 @@ export function useSendFriendRequest() {
         .from("friendships")
         .upsert(
           { user_id: user!.id, friend_id: friendId, status: "pending" },
-          { onConflict: "user_id,friend_id" }
+          { onConflict: "user_id,friend_id" },
         );
       if (error) throw error;
     },

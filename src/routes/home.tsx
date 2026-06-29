@@ -141,7 +141,7 @@ function HomePage() {
             )}
           </button>
         </div>
-        <div className="flex gap-3 overflow-x-auto pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex gap-3 overflow-x-auto pt-2 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {friendsLoading
             ? Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="flex w-16 shrink-0 flex-col items-center gap-1.5">
@@ -151,7 +151,7 @@ function HomePage() {
               ))
             : friends.map((f) => (
                 <div key={f.id} className="flex w-16 shrink-0 flex-col items-center gap-1.5">
-                  <div className="relative ring-2 ring-[var(--orange)] rounded-full">
+                  <div className="relative rounded-full border-2 border-[var(--orange)] p-0.5 bg-background">
                     <UserAvatar avatarUrl={f.avatar_url} avatarEmoji={f.avatar_emoji} size={56} />
                     <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background bg-emerald-500" />
                   </div>

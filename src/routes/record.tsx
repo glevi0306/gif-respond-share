@@ -227,8 +227,30 @@ function RecordPage() {
     }
     const vw = video.videoWidth || 720;
     const vh = video.videoHeight || 960;
+
+    // GIF canvas matches the 3:4 preview container so the output equals what the user saw.
     const targetW = GIF_WIDTH;
-    const targetH = Math.round((vh / vw) * targetW);
+    const targetH = Math.round(GIF_WIDTH * 4 / 3); // 480 — mirrors aspect-[3/4] container
+
+    // Replicate CSS object-cover center-crop: scale the video until it covers the 3:4 frame,
+    // then sample only the visible center region.
+    const videoAspect = vw / vh;
+    const containerAspect = 3 / 4;
+    let sx: number, sy: number, sw: number, sh: number;
+    if (videoAspect > containerAspect) {
+      // Video wider than container → fit height, crop left/right symmetrically
+      sh = vh;
+      sw = Math.round(vh * containerAspect);
+      sx = Math.round((vw - sw) / 2);
+      sy = 0;
+    } else {
+      // Video taller/narrower → fit width, crop top/bottom symmetrically
+      sw = vw;
+      sh = Math.round(vw / containerAspect);
+      sx = 0;
+      sy = Math.round((vh - sh) / 2);
+    }
+
     const canvas = canvasRef.current ?? document.createElement("canvas");
     canvas.width = targetW;
     canvas.height = targetH;
@@ -247,9 +269,9 @@ function RecordPage() {
       if (framesRef.current.length >= TOTAL_FRAMES) return;
       if (facing === "user") {
         ctx.save(); ctx.translate(targetW, 0); ctx.scale(-1, 1);
-        ctx.drawImage(video, 0, 0, targetW, targetH); ctx.restore();
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH); ctx.restore();
       } else {
-        ctx.drawImage(video, 0, 0, targetW, targetH);
+        ctx.drawImage(video, sx, sy, sw, sh, 0, 0, targetW, targetH);
       }
       framesRef.current.push(ctx.getImageData(0, 0, targetW, targetH));
     }, FRAME_INTERVAL);
@@ -554,7 +576,7 @@ function RecordPage() {
           <video
             ref={videoRef}
             playsInline muted autoPlay
-            className={`absolute inset-0 h-full w-full object-contain ${!showCamera ? "hidden" : ""}`}
+            className={`absolute inset-0 h-full w-full object-cover ${!showCamera ? "hidden" : ""}`}
             style={{
               transform: facing === "user" ? "scaleX(-1)" : undefined,
               opacity: cameraOpacity,

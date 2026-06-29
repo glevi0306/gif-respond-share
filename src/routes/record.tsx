@@ -47,7 +47,19 @@ function RecordPage() {
   const [error, setError] = useState<string | null>(null);
   const [minDurationError, setMinDurationError] = useState<string | null>(null);
   const [gifUrl, setGifUrl] = useState<string | null>(null);
-  const [facing, setFacing] = useState<"user" | "environment">("user");
+  const [facing, setFacing] = useState<"user" | "environment">(() => {
+    try {
+      const stored = typeof window !== "undefined"
+        ? window.localStorage.getItem("sec.preferredCameraFacingMode")
+        : null;
+      return stored === "environment" ? "environment" : "user";
+    } catch {
+      return "user";
+    }
+  });
+  const [isSwitching, setIsSwitching] = useState(false);
+  const [cameraOpacity, setCameraOpacity] = useState(1);
+  const [backCameraError, setBackCameraError] = useState<string | null>(null);
 
   // ── Border animation state ────────────────────────────────
   const [borderVisible, setBorderVisible] = useState(false);
@@ -143,8 +155,16 @@ function RecordPage() {
         await videoRef.current.play().catch(() => {});
       }
     } catch (e) {
+      if (facing === "environment") {
+        setBackCameraError("Back camera not available on this device.");
+        setFacing("user");
+        return;
+      }
       const msg = e instanceof Error ? e.message : "Unable to access camera.";
       setError(msg);
+    } finally {
+      setCameraOpacity(1);
+      setIsSwitching(false);
     }
   }, [facing, stopStream]);
 
@@ -338,9 +358,22 @@ function RecordPage() {
 
   // ── Flip camera ───────────────────────────────────────────
 
-  const flipCamera = async () => {
-    setFacing((f) => (f === "user" ? "environment" : "user"));
+  const flipCamera = () => {
+    if (isSwitching || phase !== "idle" || !streamRef.current) return;
+    const next: "user" | "environment" = facing === "user" ? "environment" : "user";
+    setBackCameraError(null);
+    setIsSwitching(true);
+    setCameraOpacity(0);
+    try { window.localStorage.setItem("sec.preferredCameraFacingMode", next); } catch {}
+    setFacing(next);
   };
+
+  // Auto-clear back-camera warning after 3 s
+  useEffect(() => {
+    if (!backCameraError) return;
+    const t = setTimeout(() => setBackCameraError(null), 3000);
+    return () => clearTimeout(t);
+  }, [backCameraError]);
 
   useEffect(() => {
     if (phase === "idle") void startCamera();
@@ -522,7 +555,11 @@ function RecordPage() {
             ref={videoRef}
             playsInline muted autoPlay
             className={`absolute inset-0 h-full w-full object-cover ${!showCamera ? "hidden" : ""}`}
-            style={{ transform: facing === "user" ? "scaleX(-1)" : undefined }}
+            style={{
+              transform: facing === "user" ? "scaleX(-1)" : undefined,
+              opacity: cameraOpacity,
+              transition: "opacity 220ms ease",
+            }}
           />
 
           {showGif && (
@@ -552,11 +589,18 @@ function RecordPage() {
           {phase === "idle" && streamRef.current && (
             <button
               onClick={flipCamera}
-              className="absolute right-4 top-4 grid h-10 w-10 place-items-center rounded-full bg-black/60 text-white backdrop-blur"
+              disabled={isSwitching}
+              className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-opacity disabled:opacity-40"
               aria-label="Flip camera"
             >
               <SwitchCamera className="h-5 w-5" />
             </button>
+          )}
+
+          {backCameraError && phase === "idle" && (
+            <div className="absolute inset-x-3 bottom-3 rounded-2xl bg-black/65 px-4 py-2.5 text-center text-xs font-medium text-white backdrop-blur-sm">
+              {backCameraError}
+            </div>
           )}
 
           {phase === "recording" && (

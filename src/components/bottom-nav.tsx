@@ -31,8 +31,11 @@ export function BottomNav() {
               <Link
                 key={to}
                 to={to}
-                className="-mt-6 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg"
-                style={{ backgroundColor: "var(--orange)" }}
+                className="-mt-6 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg active:scale-[0.93]"
+                style={{
+                  backgroundColor: "var(--orange)",
+                  transition: "transform 120ms cubic-bezier(0.2, 0, 0, 1)",
+                }}
                 aria-label={label}
               >
                 <Icon className="h-6 w-6" />
@@ -43,11 +46,20 @@ export function BottomNav() {
             <Link
               key={to}
               to={to}
-              className={`flex flex-1 flex-col items-center gap-0.5 rounded-full py-2 text-[11px] font-medium transition ${
-                active ? "text-foreground" : "text-muted-foreground"
-              }`}
+              className="flex flex-1 flex-col items-center gap-0.5 rounded-full py-2 text-[11px] font-medium"
+              style={{
+                color: active ? "var(--foreground)" : "var(--muted-foreground)",
+                transition: "color 180ms cubic-bezier(0.2, 0, 0, 1)",
+              }}
             >
-              <Icon className={`h-5 w-5 ${active ? "scale-110" : ""} transition`} />
+              <Icon
+                className="h-5 w-5"
+                style={{
+                  transform: active ? "scale(1.15)" : "scale(1)",
+                  transition:
+                    "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), color 180ms cubic-bezier(0.2, 0, 0, 1)",
+                }}
+              />
               <span>{label}</span>
             </Link>
           );

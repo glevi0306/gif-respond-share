@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
@@ -135,6 +135,17 @@ function RootComponent() {
   );
 }
 
+// Wraps <Outlet /> with a per-route key so React remounts on navigation,
+// replaying the page-in fade animation on every route change.
+function AnimatedPage() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  return (
+    <div key={pathname} className="animate-page-in">
+      <Outlet />
+    </div>
+  );
+}
+
 // AppShell consumes both AuthProvider and AppProvider.
 // It handles the global loading state, language sync, route guard, and splash screen.
 function AppShell() {
@@ -142,6 +153,8 @@ function AppShell() {
   const { setLanguage } = useApp();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const queryClient = useQueryClient();
+  const prevTokenRef = useRef<string | null>(null);
 
   // ── Service worker ────────────────────────────────────────────
   useEffect(() => {
@@ -149,6 +162,20 @@ function AppShell() {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
   }, []);
+
+  // ── Query invalidation on token change ───────────────────────
+  // Fires whenever the access token changes value — both on initial
+  // establishment (null → token) and on TOKEN_REFRESHED (old → new).
+  // This ensures queries that may have fired with an expired/stale token
+  // are refetched immediately once the fresh token is in place.
+  useEffect(() => {
+    const token = session?.access_token ?? null;
+    const prev = prevTokenRef.current;
+    prevTokenRef.current = token;
+    if (token && prev !== token) {
+      queryClient.invalidateQueries();
+    }
+  }, [session?.access_token, queryClient]);
 
   // ── Splash screen ─────────────────────────────────────────────
   // Visible on first mount. Fades out once auth resolves + min 700ms has passed.
@@ -210,7 +237,7 @@ function AppShell() {
     </div>
   ) : (
     <div className="mx-auto min-h-screen w-full max-w-md bg-background">
-      <Outlet />
+      <AnimatedPage />
     </div>
   );
 

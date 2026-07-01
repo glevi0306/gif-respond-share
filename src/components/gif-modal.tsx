@@ -54,12 +54,21 @@ export function GifModal({
     };
   }, []);
 
+  // Shared close path — plays the directional exit animation then unmounts.
+  // Guards against double-invocation (backdrop + X both route here).
+  const handleClose = () => {
+    if (closing) return;
+    setClosing(true);
+    closeTimerRef.current = setTimeout(onClose, 320);
+  };
+
   // Triggered when user picks an emoji. Fires the parent mutation then
   // starts the directional close animation. Deselecting (emoji = null)
   // keeps the modal open so the user can pick a different reaction.
   const handleReact = (emoji: string | null) => {
     onReact(emoji);
     if (emoji !== null) {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
       setClosing(true);
       closeTimerRef.current = setTimeout(onClose, 320);
     }
@@ -73,11 +82,11 @@ export function GifModal({
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center ${overlayClass}`}
       style={{ backgroundColor: "rgba(0,0,0,0.88)", backdropFilter: "blur(6px)" }}
-      onClick={closing ? undefined : onClose}
+      onClick={handleClose}
     >
       <button
-        onClick={closing ? undefined : onClose}
-        className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/15 text-white transition active:scale-95"
+        onClick={handleClose}
+        className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-white/15 text-white transition-transform active:scale-95"
         aria-label="Close"
       >
         <X className="h-5 w-5" />
@@ -109,7 +118,7 @@ export function GifModal({
               <div className="flex justify-center">
                 <button
                   onClick={onDelete}
-                  className="flex items-center gap-2 rounded-full border border-red-500/40 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-400 transition active:scale-95"
+                  className="flex items-center gap-2 rounded-full border border-red-500/40 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-400 transition-transform active:scale-95"
                 >
                   <Trash2 className="h-4 w-4" /> Delete
                 </button>

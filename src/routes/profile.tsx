@@ -211,7 +211,7 @@ function ProfilePage() {
               setShowEmojiPicker(false);
               setSheetOpen(true);
             }}
-            className="rounded-full ring-4 ring-white/30 active:opacity-75"
+            className="rounded-full ring-4 ring-white/30 transition-opacity active:opacity-75"
             aria-label="Edit avatar"
           >
             <UserAvatar avatarUrl={avatarUrl} avatarEmoji={avatarEmoji} size={80} />
@@ -247,7 +247,7 @@ function ProfilePage() {
                   setUsernameError(null);
                   setEditingUsername(true);
                 }}
-                className="flex items-center gap-1 text-xs text-muted-foreground active:opacity-70"
+                className="flex items-center gap-1 text-xs text-muted-foreground transition-opacity active:opacity-70"
                 aria-label="Edit username"
               >
                 <Pencil className="h-3 w-3" /> Edit
@@ -282,14 +282,14 @@ function ProfilePage() {
                     setUsernameError(null);
                   }}
                   disabled={savingUsername}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-border py-2.5 text-sm font-semibold disabled:opacity-50"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-border py-2.5 text-sm font-semibold transition-transform active:scale-[0.98] disabled:opacity-50"
                 >
                   <X className="h-4 w-4" /> Cancel
                 </button>
                 <button
                   onClick={() => void handleSaveUsername()}
                   disabled={savingUsername || !!usernameError}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-foreground py-2.5 text-sm font-semibold text-background disabled:opacity-50"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-foreground py-2.5 text-sm font-semibold text-background transition-transform active:scale-[0.98] disabled:opacity-50"
                 >
                   <Check className="h-4 w-4" /> {savingUsername ? "Saving…" : "Save"}
                 </button>
@@ -313,7 +313,7 @@ function ProfilePage() {
                     alt="GIF"
                     loading="lazy"
                     decoding="async"
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover animate-fade-in"
                   />
                 </div>
               ))}
@@ -323,7 +323,7 @@ function ProfilePage() {
 
         <Link
           to="/settings"
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-full border border-border bg-card py-3.5 text-sm font-semibold"
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-full border border-border bg-card py-3.5 text-sm font-semibold transition-transform active:scale-[0.99]"
         >
           <SettingsIcon className="h-4 w-4" /> Open Settings
         </Link>
@@ -354,7 +354,7 @@ function ProfilePage() {
                 <button
                   key={e}
                   onClick={() => void handleEmojiSelect(e)}
-                  className={`grid h-12 w-12 place-items-center rounded-2xl text-2xl transition active:scale-95 ${
+                  className={`grid h-12 w-12 place-items-center rounded-2xl text-2xl transition-transform active:scale-95 ${
                     profile?.avatar_emoji === e
                       ? "bg-[var(--orange)]/15 ring-2 ring-[var(--orange)]"
                       : "bg-muted"
@@ -369,14 +369,14 @@ function ProfilePage() {
           <div className="space-y-2">
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition active:scale-[0.99]"
+              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition-transform active:scale-[0.99]"
             >
               <Camera className="h-5 w-5 text-muted-foreground" />
               <p className="text-sm font-semibold">Choose photo</p>
             </button>
             <button
               onClick={() => setShowEmojiPicker(true)}
-              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition active:scale-[0.99]"
+              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition-transform active:scale-[0.99]"
             >
               <Smile className="h-5 w-5 text-muted-foreground" />
               <p className="text-sm font-semibold">Choose emoji</p>
@@ -384,7 +384,7 @@ function ProfilePage() {
             {avatarUrl && (
               <button
                 onClick={() => void handleRemovePhoto()}
-                className="flex w-full items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-left transition active:scale-[0.99] dark:border-red-900/40 dark:bg-red-950/20"
+                className="flex w-full items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-left transition-transform active:scale-[0.99] dark:border-red-900/40 dark:bg-red-950/20"
               >
                 <Trash2 className="h-5 w-5 text-red-500" />
                 <p className="text-sm font-semibold text-red-500">Remove photo</p>

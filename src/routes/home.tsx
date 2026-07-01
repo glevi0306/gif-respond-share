@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Bell, Plus, UserPlus } from "lucide-react";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { OrangeHeader } from "../components/orange-header";
 import { BottomNav } from "../components/bottom-nav";
 import { FindFriendsSheet } from "../components/find-friends-sheet";
@@ -24,6 +24,10 @@ type FriendProfile = {
   avatar_url?: string | null;
 };
 
+type RawFriendRow = {
+  profile: FriendProfile | FriendProfile[] | null;
+};
+
 function useFriends() {
   const { user } = useAuth();
   return useQuery({
@@ -41,17 +45,21 @@ function useFriends() {
           .eq("friend_id", user!.id)
           .eq("status", "accepted"),
       ]);
+      const normalize = (raw: FriendProfile | FriendProfile[] | null): FriendProfile | null => {
+        if (!raw) return null;
+        return Array.isArray(raw) ? (raw[0] ?? null) : raw;
+      };
       const profiles = [
-        ...((asSender ?? []) as { profile: FriendProfile }[]).map((r) => r.profile),
-        ...((asReceiver ?? []) as { profile: FriendProfile }[]).map((r) => r.profile),
-      ].filter(Boolean) as FriendProfile[];
+        ...((asSender ?? []) as RawFriendRow[]).map((r) => normalize(r.profile)),
+        ...((asReceiver ?? []) as RawFriendRow[]).map((r) => normalize(r.profile)),
+      ].filter((p): p is FriendProfile => p !== null);
       return profiles;
     },
     enabled: !!user,
   });
 }
 
-function StatusBadge({ status }: { status: ChatRow["status"] }) {
+const StatusBadge = memo(function StatusBadge({ status }: { status: ChatRow["status"] }) {
   if (status === "new-question") {
     return (
       <span className="shrink-0 rounded-full bg-[var(--orange)]/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--orange)]">
@@ -66,6 +74,13 @@ function StatusBadge({ status }: { status: ChatRow["status"] }) {
       </span>
     );
   }
+  if (status === "new-gif") {
+    return (
+      <span className="shrink-0 rounded-full bg-sky-500/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+        New GIF
+      </span>
+    );
+  }
   if (status === "sent") {
     return (
       <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -74,7 +89,7 @@ function StatusBadge({ status }: { status: ChatRow["status"] }) {
     );
   }
   return null;
-}
+});
 
 function HomePage() {
   const { data: chats = [], isLoading: chatsLoading } = useChats();
@@ -83,7 +98,7 @@ function HomePage() {
   const [showFriendsSheet, setShowFriendsSheet] = useState(false);
 
   const pending = chats.filter(
-    (c) => c.status === "new-question" || c.status === "new-answer",
+    (c) => c.status === "new-question" || c.status === "new-answer" || c.status === "new-gif",
   ).length;
 
   return (
@@ -93,7 +108,7 @@ function HomePage() {
         subtitle=""
         right={
           <button
-            className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-white"
+            className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-white transition-transform active:scale-95"
             aria-label="Notifications"
           >
             <Bell className="h-5 w-5" />
@@ -129,7 +144,7 @@ function HomePage() {
           <h2 className="text-base font-bold">Friends</h2>
           <button
             onClick={() => setShowFriendsSheet(true)}
-            className="relative flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold transition active:scale-95"
+            className="relative flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold transition-transform active:scale-95"
           >
             <UserPlus className="h-3.5 w-3.5" />
             Add
@@ -154,7 +169,7 @@ function HomePage() {
                     key={f.id}
                     to="/conversation/$userId"
                     params={{ userId: f.id }}
-                    className="flex w-16 shrink-0 flex-col items-center gap-1.5"
+                    className="flex w-16 shrink-0 flex-col items-center gap-1.5 transition-transform active:scale-[0.95]"
                   >
                     <div className="relative rounded-full border-2 border-[var(--orange)] p-0.5 bg-background">
                       <UserAvatar avatarUrl={f.avatar_url} avatarEmoji={f.avatar_emoji} size={56} />
@@ -194,7 +209,7 @@ function HomePage() {
                 key={c.partnerId}
                 to="/conversation/$userId"
                 params={{ userId: c.partnerId }}
-                className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 transition active:scale-[0.99]"
+                className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 transition-transform active:scale-[0.99]"
               >
                 <UserAvatar
                   avatarUrl={c.partner.avatar_url}

@@ -38,43 +38,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Safety net: if the token refresh or network hangs on cold start, release
+    // the loading gate after 5 s so the route guard can redirect to /auth
+    // instead of leaving the user on an infinite spinner.
+    const safetyTimer = setTimeout(() => setLoading(false), 5000);
+
     let cancelled = false;
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (cancelled) return;
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        try {
-          const p = await loadProfile(session.user.id);
-          if (!cancelled) setProfile(p);
-        } catch {
-          // Profile fetch failed — continue; profile will be null
-        }
-      }
-      if (!cancelled) setLoading(false);
-    });
-
+    // Use onAuthStateChange exclusively (fires INITIAL_SESSION on startup after
+    // the client has fully resolved storage + any pending token refresh).
+    // Calling getSession() separately races with INITIAL_SESSION on PWA/Safari
+    // cold starts: getSession() can briefly return null before the stored
+    // session is hydrated, which triggers a spurious redirect to /auth.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (cancelled) return;
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) {
-        try {
-          const p = await loadProfile(session.user.id);
-          if (!cancelled) setProfile(p);
-        } catch {
-          // ignore
-        }
-      } else {
+      if (!session) {
         setProfile(null);
+        setLoading(false);
+        return;
+      }
+      // Always release the loading gate on INITIAL_SESSION regardless of token
+      // expiry. If the access token is expired, the Supabase client begins the
+      // refresh automatically; TOKEN_REFRESHED will fire shortly after and the
+      // __root.tsx invalidation effect will refetch all queries with the new
+      // token. Holding the gate here caused a 5 s stall on cold starts with
+      // expired tokens — routes never mounted, data never loaded.
+      setLoading(false);
+      try {
+        const p = await loadProfile(session.user.id);
+        if (!cancelled) setProfile(p);
+      } catch {
+        // ignore
       }
     });
 
     return () => {
       cancelled = true;
+      clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
   }, []);

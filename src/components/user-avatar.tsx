@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 interface UserAvatarProps {
   avatarUrl?: string | null;
   avatarEmoji: string;
@@ -5,7 +7,12 @@ interface UserAvatarProps {
   className?: string;
 }
 
-export function UserAvatar({ avatarUrl, avatarEmoji, size = 28, className = "" }: UserAvatarProps) {
+export const UserAvatar = memo(function UserAvatar({
+  avatarUrl,
+  avatarEmoji,
+  size = 28,
+  className = "",
+}: UserAvatarProps) {
   if (avatarUrl) {
     return (
       <img
@@ -24,4 +31,4 @@ export function UserAvatar({ avatarUrl, avatarEmoji, size = 28, className = "" }
       {avatarEmoji}
     </div>
   );
-}
+});

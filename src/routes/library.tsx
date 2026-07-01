@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Search, Tag, Share2, Trash2, Star, ArrowUpDown } from "lucide-react";
 import { OrangeHeader } from "../components/orange-header";
@@ -82,23 +82,29 @@ function LibraryPage() {
     enabled: !!user && showShareSheet,
   });
 
-  // Apply category + favorites filter
-  const filtered =
-    cat === "favorites"
-      ? gifs.filter((g) => g.is_favorite)
-      : cat === "all"
-        ? gifs
-        : gifs.filter((g) => g.category === cat);
+  // Apply category filter + sort — memoized so re-renders from unrelated state
+  // (animatingCatId, selectedGif, showShareSheet, etc.) skip the O(n log n) sort.
+  const items = useMemo(() => {
+    const base =
+      cat === "favorites"
+        ? gifs.filter((g) => g.is_favorite)
+        : cat === "all"
+          ? gifs
+          : gifs.filter((g) => g.category === cat);
+    return [...base].sort((a, b) => {
+      if (sort === "used") return b.times_used - a.times_used;
+      return a.created_at < b.created_at ? 1 : -1;
+    });
+  }, [gifs, cat, sort]);
 
-  // Apply sort
-  const items = [...filtered].sort((a, b) => {
-    if (sort === "used") return b.times_used - a.times_used;
-    return a.created_at < b.created_at ? 1 : -1; // recent first (already ordered by DB but keep consistent)
-  });
-
-  const filteredProfiles = friendSearch
-    ? allProfiles.filter((f) => f.username.toLowerCase().includes(friendSearch.toLowerCase()))
-    : allProfiles;
+  // Memoized so typing in the search box only re-filters profiles, not the gif grid.
+  const filteredProfiles = useMemo(
+    () =>
+      friendSearch
+        ? allProfiles.filter((f) => f.username.toLowerCase().includes(friendSearch.toLowerCase()))
+        : allProfiles,
+    [allProfiles, friendSearch],
+  );
 
   // ── Actions ──────────────────────────────────────────────────
 
@@ -224,7 +230,7 @@ function LibraryPage() {
         <button
           onClick={() => void handleDelete()}
           disabled={busy}
-          className="flex flex-col items-center gap-1.5 px-4 py-2 transition active:scale-95 disabled:opacity-50"
+          className="flex flex-col items-center gap-1.5 px-4 py-2 transition-transform active:scale-95 disabled:opacity-50"
         >
           <div className="grid h-10 w-10 place-items-center rounded-full border border-red-500/30 bg-red-500/10 text-red-400">
             <Trash2 className="h-4 w-4" />
@@ -235,7 +241,7 @@ function LibraryPage() {
         <button
           onClick={() => setShowCategorySheet(true)}
           disabled={busy}
-          className="flex flex-col items-center gap-1.5 px-4 py-2 transition active:scale-95 disabled:opacity-50"
+          className="flex flex-col items-center gap-1.5 px-4 py-2 transition-transform active:scale-95 disabled:opacity-50"
         >
           <div className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-base">
             {getCategoryEmoji(selectedGif.category) ?? (
@@ -248,7 +254,7 @@ function LibraryPage() {
         <button
           onClick={(e) => void handleToggleFavorite(selectedGif, e)}
           disabled={busy}
-          className="flex flex-col items-center gap-1.5 px-4 py-2 transition active:scale-95 disabled:opacity-50"
+          className="flex flex-col items-center gap-1.5 px-4 py-2 transition-transform active:scale-95 disabled:opacity-50"
         >
           <div
             className={`grid h-10 w-10 place-items-center rounded-full border ${selectedGif.is_favorite ? "border-amber-400/40 bg-amber-400/15 text-amber-400" : "border-border bg-card text-muted-foreground"}`}
@@ -265,7 +271,7 @@ function LibraryPage() {
         <button
           onClick={() => setShowShareSheet(true)}
           disabled={busy}
-          className="flex flex-col items-center gap-1.5 px-4 py-2 transition active:scale-95 disabled:opacity-50"
+          className="flex flex-col items-center gap-1.5 px-4 py-2 transition-transform active:scale-95 disabled:opacity-50"
         >
           <div className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card">
             <Share2 className="h-4 w-4 text-muted-foreground" />
@@ -307,7 +313,7 @@ function LibraryPage() {
           <div className="mt-3 flex justify-end">
             <button
               onClick={() => setSort((s) => (s === "recent" ? "used" : "recent"))}
-              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground transition active:scale-95"
+              className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-transform active:scale-95"
             >
               <ArrowUpDown className="h-3 w-3" />
               {sort === "recent" ? "Recently Added" : "Most Used"}
@@ -339,7 +345,7 @@ function LibraryPage() {
                   <button
                     key={g.id}
                     onClick={() => setSelectedGif(g)}
-                    className="group relative aspect-square overflow-hidden rounded-2xl bg-muted transition active:scale-[0.97]"
+                    className="group relative aspect-square overflow-hidden rounded-2xl bg-muted transition-transform active:scale-[0.97]"
                   >
                     <GifThumbnail url={g.public_url} />
 
@@ -363,7 +369,7 @@ function LibraryPage() {
                     {/* Star toggle button — visible on hover/tap, top-right */}
                     <button
                       onClick={(e) => void handleToggleFavorite(g, e)}
-                      className={`absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full backdrop-blur transition active:scale-90 ${
+                      className={`absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full backdrop-blur transition-transform active:scale-90 ${
                         g.is_favorite
                           ? "bg-amber-400/90 text-white opacity-100"
                           : "bg-black/50 text-white opacity-0 group-hover:opacity-100"
@@ -425,7 +431,7 @@ function LibraryPage() {
                 key={c.key}
                 onClick={() => void handleSetCategory(c.key)}
                 disabled={busy}
-                className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3.5 text-left transition active:scale-[0.99] disabled:opacity-50 ${
+                className={`flex w-full items-center gap-3 rounded-2xl border px-4 py-3.5 text-left transition-transform active:scale-[0.99] disabled:opacity-50 ${
                   isSelected
                     ? "border-foreground bg-foreground text-background"
                     : "border-border bg-card"
@@ -472,7 +478,7 @@ function LibraryPage() {
               key={f.id}
               onClick={() => void handleShare(f.id)}
               disabled={busy}
-              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3.5 text-left transition active:scale-[0.99] disabled:opacity-50"
+              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3.5 text-left transition-transform active:scale-[0.99] disabled:opacity-50"
             >
               <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-muted text-xl">
                 {f.avatar_emoji}
@@ -488,8 +494,11 @@ function LibraryPage() {
   );
 }
 
-// GIF thumbnail with a visible fallback for broken / deleted storage URLs
-function GifThumbnail({ url }: { url: string }) {
+// GIF thumbnail with a visible fallback for broken / deleted storage URLs.
+// Memoized so the entire grid doesn't re-render when unrelated state changes
+// (animatingCatId, selectedGif, showShareSheet, etc.) in LibraryPage.
+const GifThumbnail = memo(function GifThumbnail({ url }: { url: string }) {
+  const [loaded, setLoaded] = useState(false);
   const [broken, setBroken] = useState(false);
   if (broken) {
     return (
@@ -505,10 +514,12 @@ function GifThumbnail({ url }: { url: string }) {
       loading="lazy"
       decoding="async"
       className="h-full w-full object-cover"
+      style={{ opacity: loaded ? 1 : 0, transition: "opacity 200ms ease" }}
+      onLoad={() => setLoaded(true)}
       onError={() => setBroken(true)}
     />
   );
-}
+});
 
 function CatChip({
   active,
@@ -522,7 +533,7 @@ function CatChip({
   return (
     <button
       onClick={onClick}
-      className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition ${
+      className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-[color,background-color,border-color,transform] active:scale-[0.97] ${
         active
           ? "border-foreground bg-foreground text-background"
           : "border-border bg-card text-foreground"

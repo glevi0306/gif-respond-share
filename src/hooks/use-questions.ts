@@ -94,8 +94,8 @@ export type ChatRow = {
   partner: QuestionSender;
   lastText: string;
   lastTime: string;
-  status: "sent" | "new-answer" | "new-question" | "idle";
-  questionId: string;
+  status: "sent" | "new-answer" | "new-question" | "new-gif" | "idle";
+  questionId?: string;
 };
 
 // A question row augmented with both participant profiles (answers fetched separately)
@@ -134,24 +134,14 @@ export type DirectGifRow = {
 
 // ── Chat / Conversation hooks ─────────────────────────────────
 
-// One chat per unique conversation partner, sorted by most recent activity
+// One chat per unique conversation partner, sorted by most recent activity.
+// Badge status is suppressed for conversations the current user has already opened
+// (tracked via conversation_reads).
 export function useChats() {
   const { user } = useAuth();
   return useQuery({
     queryKey: ["chats", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("questions")
-        .select(
-          "id, from_id, to_id, text, status, created_at, " +
-            "sender:profiles!from_id(id, username, avatar_emoji, avatar_url), " +
-            "receiver:profiles!to_id(id, username, avatar_emoji, avatar_url)",
-        )
-        .or(`from_id.eq.${user!.id},to_id.eq.${user!.id}`)
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (error) throw error;
-
       type RawRow = {
         id: string;
         from_id: string;
@@ -159,46 +149,173 @@ export function useChats() {
         text: string;
         status: "waiting" | "answered";
         created_at: string;
-        sender: QuestionSender;
-        receiver: QuestionSender;
+        sender: QuestionSender | QuestionSender[] | null;
+        receiver: QuestionSender | QuestionSender[] | null;
+      };
+      type RawDG = { id: string; sender_id: string; receiver_id: string; created_at: string };
+      type ReadRow = { partner_id: string; last_seen_at: string };
+      type AnswerTimeRow = { question_id: string; created_at: string };
+
+      const normalizeProfile = (
+        raw: QuestionSender | QuestionSender[] | null,
+      ): QuestionSender | null => {
+        if (!raw) return null;
+        return Array.isArray(raw) ? (raw[0] ?? null) : raw;
       };
 
-      const seen = new Set<string>();
-      const chats: ChatRow[] = [];
+      // Fetch questions, direct_gifs, and read receipts in parallel
+      const [{ data: questionsData, error }, { data: directGifsRaw }, { data: readsData }] =
+        await Promise.all([
+          supabase
+            .from("questions")
+            .select(
+              "id, from_id, to_id, text, status, created_at, " +
+                "sender:profiles!from_id(id, username, avatar_emoji, avatar_url), " +
+                "receiver:profiles!to_id(id, username, avatar_emoji, avatar_url)",
+            )
+            .or(`from_id.eq.${user!.id},to_id.eq.${user!.id}`)
+            .order("created_at", { ascending: false })
+            .limit(100),
+          supabase
+            .from("direct_gifs")
+            .select("id, sender_id, receiver_id, created_at")
+            .or(`sender_id.eq.${user!.id},receiver_id.eq.${user!.id}`)
+            .order("created_at", { ascending: false })
+            .limit(100),
+          supabase
+            .from("conversation_reads")
+            .select("partner_id, last_seen_at")
+            .eq("user_id", user!.id),
+        ]);
+      if (error) throw error;
 
-      for (const q of (data ?? []) as unknown as RawRow[]) {
+      // Build reads map: partner_id → last_seen_at
+      const readsMap: Record<string, string> = {};
+      for (const r of (readsData ?? []) as ReadRow[]) {
+        readsMap[r.partner_id] = r.last_seen_at;
+      }
+
+      // Collect answered question IDs where I'm the asker
+      const rows = (questionsData ?? []) as unknown as RawRow[];
+      const answeredQIds = rows
+        .filter((q) => q.from_id === user!.id && q.status === "answered")
+        .map((q) => q.id);
+
+      const answerTimeMap: Record<string, string> = {};
+      if (answeredQIds.length > 0) {
+        const { data: answersData } = await supabase
+          .from("answers")
+          .select("question_id, created_at")
+          .in("question_id", answeredQIds);
+        for (const a of (answersData ?? []) as AnswerTimeRow[]) {
+          answerTimeMap[a.question_id] = a.created_at;
+        }
+      }
+
+      // Map<partnerId, Candidate> — keeps only the newest activity per partner
+      type Candidate = {
+        partner: QuestionSender;
+        lastText: string;
+        time: string;
+        status: ChatRow["status"];
+        questionId?: string;
+      };
+      const candidateMap = new Map<string, Candidate>();
+      const profilesMap = new Map<string, QuestionSender>();
+
+      const setIfNewer = (partnerId: string, candidate: Candidate) => {
+        const existing = candidateMap.get(partnerId);
+        if (!existing || candidate.time > existing.time) {
+          candidateMap.set(partnerId, candidate);
+        }
+      };
+
+      // Process questions
+      for (const q of rows) {
         const iSent = q.from_id === user!.id;
         const partnerId = iSent ? q.to_id : q.from_id;
-        if (seen.has(partnerId)) continue;
-        seen.add(partnerId);
+        const partner = normalizeProfile(iSent ? q.receiver : q.sender);
+        if (!partner) continue;
 
-        const partner = iSent ? q.receiver : q.sender;
+        profilesMap.set(partnerId, partner);
 
+        const lastSeenAt = readsMap[partnerId] ?? null;
         let status: ChatRow["status"];
+        let activityTime = q.created_at;
+
         if (!iSent && q.status === "waiting") {
-          status = "new-question"; // partner asked me, I haven't replied with a GIF
+          status = lastSeenAt && lastSeenAt >= q.created_at ? "idle" : "new-question";
         } else if (iSent && q.status === "answered") {
-          status = "new-answer"; // I asked, partner replied
+          const answerTime = answerTimeMap[q.id] ?? q.created_at;
+          activityTime = answerTime;
+          status = lastSeenAt && lastSeenAt >= answerTime ? "idle" : "new-answer";
         } else if (iSent && q.status === "waiting") {
-          status = "sent"; // I asked, still waiting
+          status = "sent";
         } else {
-          status = "idle"; // I answered their question, no pending action
+          status = "idle";
         }
 
-        chats.push({
-          partnerId,
+        setIfNewer(partnerId, {
           partner,
           lastText: q.text,
-          lastTime: q.created_at,
+          time: activityTime,
           status,
           questionId: q.id,
         });
       }
 
-      return chats;
+      // Process direct GIFs — fetch profiles for partners not already known from questions
+      const dgRows = (directGifsRaw ?? []) as RawDG[];
+      const unknownIds = new Set<string>();
+      for (const dg of dgRows) {
+        const partnerId = dg.sender_id === user!.id ? dg.receiver_id : dg.sender_id;
+        if (!profilesMap.has(partnerId)) unknownIds.add(partnerId);
+      }
+      if (unknownIds.size > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, username, avatar_emoji, avatar_url")
+          .in("id", [...unknownIds]);
+        for (const p of (profilesData ?? []) as QuestionSender[]) {
+          profilesMap.set(p.id, p);
+        }
+      }
+
+      for (const dg of dgRows) {
+        const iSent = dg.sender_id === user!.id;
+        const partnerId = iSent ? dg.receiver_id : dg.sender_id;
+        const partner = profilesMap.get(partnerId);
+        if (!partner) continue;
+
+        const lastSeenAt = readsMap[partnerId] ?? null;
+        const status: ChatRow["status"] = iSent
+          ? "sent"
+          : lastSeenAt && lastSeenAt >= dg.created_at
+            ? "idle"
+            : "new-gif";
+
+        setIfNewer(partnerId, {
+          partner,
+          lastText: "Sent a GIF",
+          time: dg.created_at,
+          status,
+        });
+      }
+
+      // Sort by most recent activity descending
+      return Array.from(candidateMap.entries())
+        .sort(([, a], [, b]) => (a.time > b.time ? -1 : a.time < b.time ? 1 : 0))
+        .map(([partnerId, c]) => ({
+          partnerId,
+          partner: c.partner,
+          lastText: c.lastText,
+          lastTime: c.time,
+          status: c.status,
+          questionId: c.questionId,
+        }));
     },
     enabled: !!user,
-    staleTime: 0, // polling queries should always re-fetch on interval
+    staleTime: 0,
     refetchInterval: 15_000,
   });
 }
@@ -309,7 +426,7 @@ export function useReactionsForConversation(partnerId: string) {
     },
     enabled: !!user && !!partnerId,
     staleTime: 0,
-    refetchInterval: 10_000,
+    refetchInterval: 30_000,
   });
 }
 
@@ -453,9 +570,57 @@ export function useSendQuestion() {
       if (error) throw error;
     },
     onSuccess: () => {
-      // Refresh the received-questions list for the current user
-      // (in case they test with the same account as both sender and recipient)
       queryClient.invalidateQueries({ queryKey: ["questions"] });
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
     },
+  });
+}
+
+// ── Read receipts ─────────────────────────────────────────────
+
+// Mark a conversation as read for the current user.
+// Upserts conversation_reads (user_id, partner_id) with last_seen_at = now(),
+// then invalidates the home chats list so badges update immediately.
+export function useMarkConversationRead() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (partnerId: string) => {
+      if (!user?.id) return;
+      const { error } = await supabase
+        .from("conversation_reads")
+        .upsert(
+          { user_id: user.id, partner_id: partnerId, last_seen_at: new Date().toISOString() },
+          { onConflict: "user_id,partner_id" },
+        );
+      if (error) throw error;
+    },
+    onSuccess: (_, partnerId) => {
+      queryClient.invalidateQueries({ queryKey: ["chats"] });
+      queryClient.invalidateQueries({ queryKey: ["conv-read-state", user?.id, partnerId] });
+    },
+  });
+}
+
+// Fetch the partner's last_seen_at for this conversation so the sender can
+// show open/closed eye seen indicators. Requires RLS to allow reading rows
+// where partner_id = auth.uid() (see migration notes).
+export function useConversationReadState(partnerId: string) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["conv-read-state", user?.id, partnerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("conversation_reads")
+        .select("last_seen_at")
+        .eq("user_id", partnerId)
+        .eq("partner_id", user!.id)
+        .maybeSingle();
+      if (error) return null;
+      return (data?.last_seen_at ?? null) as string | null;
+    },
+    enabled: !!user && !!partnerId,
+    staleTime: 0,
+    refetchInterval: 30_000,
   });
 }

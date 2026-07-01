@@ -66,6 +66,10 @@ function RecordPage() {
   const [isSwitching, setIsSwitching] = useState(false);
   const [cameraOpacity, setCameraOpacity] = useState(1);
   const [backCameraError, setBackCameraError] = useState<string | null>(null);
+  // Tracks whether the camera stream is live. Stored in state (not only in
+  // streamRef) so that a successful getUserMedia call triggers a re-render
+  // and makes the flip button visible immediately — refs alone don't do this.
+  const [streamReady, setStreamReady] = useState(false);
 
   // ── Border animation state ────────────────────────────────
   const [borderVisible, setBorderVisible] = useState(false);
@@ -156,6 +160,7 @@ function RecordPage() {
         audio: false,
       });
       streamRef.current = stream;
+      setStreamReady(true);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => {});
@@ -195,26 +200,33 @@ function RecordPage() {
       setPhase("idle");
       return;
     }
-    const gif = GIFEncoder();
-    const delay = Math.round(1000 / FPS);
-    for (let i = 0; i < frames.length; i++) {
-      const data = frames[i].data;
-      const palette = quantize(data, 256, { format: "rgb444" });
-      const index = applyPalette(data, palette, "rgb444");
-      gif.writeFrame(index, frames[i].width, frames[i].height, { palette, delay });
-      setEncodeProgress((i + 1) / frames.length);
-      await new Promise((r) => setTimeout(r, 0));
+    try {
+      const gif = GIFEncoder();
+      const delay = Math.round(1000 / FPS);
+      for (let i = 0; i < frames.length; i++) {
+        const data = frames[i].data;
+        const palette = quantize(data, 256, { format: "rgb444" });
+        const index = applyPalette(data, palette, "rgb444");
+        gif.writeFrame(index, frames[i].width, frames[i].height, { palette, delay });
+        setEncodeProgress((i + 1) / frames.length);
+        await new Promise((r) => setTimeout(r, 0));
+      }
+      gif.finish();
+      const bytes = gif.bytes();
+      const buf = new ArrayBuffer(bytes.byteLength);
+      new Uint8Array(buf).set(bytes);
+      const blob = new Blob([buf], { type: "image/gif" });
+      gifBlobRef.current = blob;
+      const url = URL.createObjectURL(blob);
+      setGifUrl(url);
+      framesRef.current = [];
+      setPhase("preview");
+    } catch (err) {
+      console.error("GIF encoding failed:", err);
+      framesRef.current = [];
+      setError("Could not create GIF. Please try again.");
+      setPhase("idle");
     }
-    gif.finish();
-    const bytes = gif.bytes();
-    const buf = new ArrayBuffer(bytes.byteLength);
-    new Uint8Array(buf).set(bytes);
-    const blob = new Blob([buf], { type: "image/gif" });
-    gifBlobRef.current = blob;
-    const url = URL.createObjectURL(blob);
-    setGifUrl(url);
-    framesRef.current = [];
-    setPhase("preview");
   };
 
   // ── Start recording (no countdown) ───────────────────────
@@ -276,6 +288,7 @@ function RecordPage() {
 
     framesRef.current = [];
     recordingStartedAtRef.current = Date.now();
+    // HAPTIC: light-impact — recording starts
     setPhase("recording");
     setBorderVisible(true);
     setProgress(0);
@@ -536,6 +549,7 @@ function RecordPage() {
         }
       })();
 
+      // HAPTIC: success — GIF sent
       setPhase("done");
       setTimeout(() => {
         uploadingRef.current = false;
@@ -581,6 +595,7 @@ function RecordPage() {
         }
       })();
 
+      // HAPTIC: success — GIF sent to friend
       setPhase("done");
       setTimeout(() => {
         uploadingRef.current = false;
@@ -661,14 +676,21 @@ function RecordPage() {
             </div>
           )}
 
-          {phase === "idle" && streamRef.current && (
+          {phase === "idle" && streamReady && (
             <button
               onClick={flipCamera}
               disabled={isSwitching}
-              className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-opacity disabled:opacity-40"
+              className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-black/55 text-white backdrop-blur-sm transition-[opacity,transform] disabled:opacity-40 active:scale-90"
               aria-label="Flip camera"
+              // HAPTIC: selection — camera direction changes
             >
-              <SwitchCamera className="h-5 w-5" />
+              <SwitchCamera
+                className="h-5 w-5"
+                style={{
+                  transform: isSwitching ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 350ms cubic-bezier(0.22, 1, 0.36, 1)",
+                }}
+              />
             </button>
           )}
 
@@ -691,7 +713,7 @@ function RecordPage() {
           )}
 
           {phase === "encoding" && (
-            <div className="absolute inset-0 grid place-items-center bg-black/70 backdrop-blur-sm">
+            <div className="absolute inset-0 grid place-items-center bg-black/70 backdrop-blur-sm animate-overlay-fade">
               <div className="text-center text-white">
                 <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-[var(--orange)]" />
                 <p className="text-sm font-semibold">Creating GIF…</p>
@@ -703,7 +725,7 @@ function RecordPage() {
           )}
 
           {phase === "uploading" && (
-            <div className="absolute inset-0 grid place-items-center bg-black/70 backdrop-blur-sm">
+            <div className="absolute inset-0 grid place-items-center bg-black/70 backdrop-blur-sm animate-overlay-fade">
               <div className="text-center text-white">
                 <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-white/20 border-t-[var(--orange)]" />
                 <p className="text-sm font-semibold">
@@ -715,8 +737,8 @@ function RecordPage() {
 
           {phase === "done" && (
             <div className="absolute inset-0 grid place-items-center bg-black/70 backdrop-blur-sm">
-              <div className="text-center text-white">
-                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-2xl font-bold">
+              <div className="text-center text-white animate-fade-in">
+                <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-2xl font-bold animate-success-in">
                   ✓
                 </div>
                 <p className="text-sm font-semibold">
@@ -772,13 +794,19 @@ function RecordPage() {
                 onPointerUp={handleButtonPointerUp}
                 onPointerLeave={handleButtonPointerLeave}
                 disabled={phase === "encoding" || !!error}
-                className={`relative grid h-20 w-20 place-items-center rounded-full text-white shadow-xl disabled:opacity-60 ${phase === "idle" ? "animate-pulse-ring" : ""}`}
-                style={{ backgroundColor: phase === "recording" ? "#dc2626" : "var(--orange)" }}
+                className={`relative grid h-20 w-20 place-items-center rounded-full text-white shadow-xl disabled:opacity-60 active:scale-95 ${phase === "idle" ? "animate-pulse-ring" : ""}`}
+                style={{
+                  backgroundColor: phase === "recording" ? "#dc2626" : "var(--orange)",
+                  transition:
+                    "transform 120ms cubic-bezier(0.2, 0, 0, 1), background-color 200ms ease",
+                }}
                 aria-label={phase === "recording" ? "Stop recording" : "Record"}
               >
                 <div
                   className={`${phase === "recording" ? "h-6 w-6 rounded-md" : "h-14 w-14 rounded-full"} bg-white/95`}
-                  style={{ transition: "all 200ms ease" }}
+                  style={{
+                    transition: "width 200ms ease, height 200ms ease, border-radius 200ms ease",
+                  }}
                 />
               </button>
 
@@ -795,14 +823,14 @@ function RecordPage() {
                 <button
                   onClick={reset}
                   disabled={actionsDisabled}
-                  className="flex items-center justify-center gap-2 rounded-full border border-border bg-card py-3.5 text-sm font-semibold disabled:opacity-40"
+                  className="flex items-center justify-center gap-2 rounded-full border border-border bg-card py-3.5 text-sm font-semibold transition-transform active:scale-[0.97] disabled:opacity-40"
                 >
                   <RotateCcw className="h-4 w-4" /> Retake
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={isSaved || actionsDisabled}
-                  className={`flex items-center justify-center gap-2 rounded-full border py-3.5 text-sm font-semibold transition ${
+                  className={`flex items-center justify-center gap-2 rounded-full border py-3.5 text-sm font-semibold transition-transform active:scale-[0.97] ${
                     isSaved
                       ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 animate-save-pulse"
                       : "border-border bg-card disabled:opacity-40"
@@ -865,7 +893,7 @@ function RecordPage() {
             <button
               key={f.id}
               onClick={() => void handleSendToFriend(f.id)}
-              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3.5 text-left transition active:scale-[0.99]"
+              className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-3.5 text-left transition-transform active:scale-[0.99]"
             >
               <UserAvatar avatarUrl={f.avatar_url} avatarEmoji={f.avatar_emoji} size={44} />
               <p className="text-sm font-semibold">{f.username}</p>

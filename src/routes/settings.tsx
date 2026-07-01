@@ -141,7 +141,7 @@ function SettingsPage() {
               <button
                 key={l.code}
                 onClick={() => setLanguage(l.code)}
-                className="flex w-full items-center justify-between px-4 py-3 text-left"
+                className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors active:bg-muted/60"
               >
                 <span className="flex items-center gap-2 text-sm">
                   <span>{l.flag}</span>
@@ -295,7 +295,7 @@ function Action({
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center justify-between border-b border-border px-4 py-3 text-left last:border-b-0 ${danger ? "text-red-500" : ""}`}
+      className={`flex w-full items-center justify-between border-b border-border px-4 py-3 text-left last:border-b-0 transition-colors active:bg-muted/60 ${danger ? "text-red-500" : ""}`}
     >
       <span className="flex items-center gap-2 text-sm font-medium">
         {icon}
@@ -320,11 +320,15 @@ function Toggle({
       <span className="text-sm">{label}</span>
       <button
         onClick={() => onChange(!on)}
-        className={`relative h-6 w-11 rounded-full transition ${on ? "bg-[var(--orange)]" : "bg-muted"}`}
+        className={`relative h-6 w-11 rounded-full transition-colors duration-200 ${on ? "bg-[var(--orange)]" : "bg-muted"}`}
         aria-pressed={on}
       >
         <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${on ? "left-5" : "left-0.5"}`}
+          className="absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow"
+          style={{
+            transform: on ? "translateX(18px)" : "translateX(0px)",
+            transition: "transform 200ms cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
         />
       </button>
     </div>
@@ -345,7 +349,7 @@ function ThemeOption({
   return (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-xs font-semibold transition ${
+      className={`flex flex-col items-center gap-1.5 rounded-xl border p-3 text-xs font-semibold transition-[background-color,border-color,color,transform] duration-150 active:scale-95 ${
         active ? "border-foreground bg-foreground text-background" : "border-border bg-background"
       }`}
     >
@@ -381,7 +385,7 @@ function Segment<T extends string>({
         <button
           key={v}
           onClick={() => onChange(v)}
-          className={`flex-1 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+          className={`flex-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-[background-color,color,box-shadow] duration-150 active:opacity-75 ${
             value === v ? "bg-card text-foreground shadow" : "text-muted-foreground"
           }`}
         >

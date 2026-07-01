@@ -88,7 +88,7 @@ function AskPage() {
             <button
               key={f.id}
               onClick={() => setFriendId(f.id)}
-              className={`flex w-16 shrink-0 flex-col items-center gap-1.5 rounded-2xl p-2 transition ${
+              className={`flex w-16 shrink-0 flex-col items-center gap-1.5 rounded-2xl p-2 transition-[background-color,transform] active:scale-[0.95] ${
                 friendId === f.id ? "bg-[var(--orange)]/15" : ""
               }`}
             >
@@ -124,7 +124,7 @@ function AskPage() {
               <button
                 key={s}
                 onClick={() => setText(s)}
-                className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium"
+                className="rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium transition-transform active:scale-[0.97]"
               >
                 {s}
               </button>

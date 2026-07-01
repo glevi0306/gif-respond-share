@@ -21,7 +21,7 @@ export function OrangeHeader({
         {back ? (
           <Link
             to={back as string}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/25"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/15 text-white backdrop-blur transition-[background-color,transform] hover:bg-white/25 active:scale-95"
             aria-label="Back"
           >
             <ArrowLeft className="h-5 w-5" />

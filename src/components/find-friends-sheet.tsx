@@ -92,7 +92,7 @@ export function FindFriendsSheet({ isOpen, onClose }: { isOpen: boolean; onClose
                 <button
                   onClick={() => respond.mutate({ friendshipId: req.id, status: "declined" })}
                   disabled={respond.isPending}
-                  className="grid h-9 w-9 place-items-center rounded-full border border-border bg-background text-muted-foreground transition active:scale-95 disabled:opacity-50"
+                  className="grid h-9 w-9 place-items-center rounded-full border border-border bg-background text-muted-foreground transition-transform active:scale-95 disabled:opacity-50"
                   aria-label={`Decline ${req.sender.username}`}
                 >
                   <X className="h-4 w-4" />
@@ -100,7 +100,7 @@ export function FindFriendsSheet({ isOpen, onClose }: { isOpen: boolean; onClose
                 <button
                   onClick={() => respond.mutate({ friendshipId: req.id, status: "accepted" })}
                   disabled={respond.isPending}
-                  className="grid h-9 w-9 place-items-center rounded-full bg-[var(--orange)] text-white transition active:scale-95 disabled:opacity-50"
+                  className="grid h-9 w-9 place-items-center rounded-full bg-[var(--orange)] text-white transition-transform active:scale-95 disabled:opacity-50"
                   aria-label={`Accept ${req.sender.username}`}
                 >
                   <Check className="h-4 w-4" />
@@ -202,7 +202,7 @@ function FriendAction({
     <button
       onClick={onSend}
       disabled={disabled}
-      className="grid h-9 w-9 place-items-center rounded-full bg-[var(--orange)] text-white transition active:scale-95 disabled:opacity-50"
+      className="grid h-9 w-9 place-items-center rounded-full bg-[var(--orange)] text-white transition-transform active:scale-95 disabled:opacity-50"
       aria-label="Send friend request"
     >
       <UserPlus className="h-4 w-4" />

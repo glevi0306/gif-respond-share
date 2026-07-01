@@ -1,5 +1,6 @@
+import { memo } from "react";
 import { Link } from "@tanstack/react-router";
-import { Video } from "lucide-react";
+import { Eye, EyeOff, Video } from "lucide-react";
 import { compactTime } from "../hooks/use-questions";
 import { UserAvatar } from "./user-avatar";
 
@@ -15,15 +16,18 @@ export interface ChatBubbleProps {
   isRight: boolean;
   avatarEmoji?: string;
   avatarUrl?: string | null;
+  // undefined = don't show; true = open eye (seen); false = closed eye (unseen)
+  seenState?: boolean;
 }
 
-export function ChatBubble({
+export const ChatBubble = memo(function ChatBubble({
   variant,
   text,
   createdAt,
   isRight,
   avatarEmoji,
   avatarUrl,
+  seenState,
 }: ChatBubbleProps) {
   const isDeleted = variant === "deleted";
   return (
@@ -47,11 +51,20 @@ export function ChatBubble({
         >
           <p className={`text-sm ${isDeleted ? "italic" : "font-medium"} leading-snug`}>{text}</p>
         </div>
-        <p className="px-1 text-[10px] text-muted-foreground/60">{compactTime(createdAt)} ago</p>
+        <div className={`flex items-center gap-1 px-1 ${isRight ? "flex-row-reverse" : ""}`}>
+          <p className="text-[10px] text-muted-foreground/60">{compactTime(createdAt)} ago</p>
+          {isRight &&
+            seenState !== undefined &&
+            (seenState ? (
+              <Eye className="h-2.5 w-2.5 text-muted-foreground/60" />
+            ) : (
+              <EyeOff className="h-2.5 w-2.5 text-muted-foreground/25" />
+            ))}
+        </div>
       </div>
     </div>
   );
-}
+});
 
 // ── GifBubble ─────────────────────────────────────────────────
 
@@ -63,6 +76,7 @@ export interface GifBubbleProps {
   avatarUrl?: string | null;
   reactionEmoji?: string | null;
   onTap: () => void;
+  seenState?: boolean;
 }
 
 export function GifBubble({
@@ -73,6 +87,7 @@ export function GifBubble({
   avatarUrl,
   reactionEmoji,
   onTap,
+  seenState,
 }: GifBubbleProps) {
   return (
     <div className={`flex items-end gap-2 ${isRight ? "justify-end" : "justify-start"}`}>
@@ -89,6 +104,7 @@ export function GifBubble({
             style={{
               borderRadius: isRight ? RIGHT_RADIUS : LEFT_RADIUS,
               boxShadow: "0 2px 8px rgba(0,0,0,0.12), 0 0.5px 2px rgba(0,0,0,0.06)",
+              aspectRatio: "4/3",
             }}
             aria-label="View GIF"
           >
@@ -98,13 +114,10 @@ export function GifBubble({
                 alt="GIF answer"
                 loading="lazy"
                 decoding="async"
-                className="w-full object-cover animate-gif-appear"
+                className="w-full h-full object-cover animate-gif-appear"
               />
             ) : (
-              <div
-                className="grid w-full place-items-center bg-muted text-sm text-muted-foreground"
-                style={{ aspectRatio: "4/3" }}
-              >
+              <div className="grid w-full h-full place-items-center bg-muted text-sm text-muted-foreground">
                 GIF unavailable
               </div>
             )}
@@ -121,9 +134,18 @@ export function GifBubble({
           )}
         </div>
 
-        <p className={`px-1 text-[10px] text-muted-foreground/60 ${reactionEmoji ? "mt-2" : ""}`}>
-          {compactTime(createdAt)} ago
-        </p>
+        <div
+          className={`flex items-center gap-1 px-1 ${isRight ? "flex-row-reverse" : ""} ${reactionEmoji ? "mt-2" : ""}`}
+        >
+          <p className="text-[10px] text-muted-foreground/60">{compactTime(createdAt)} ago</p>
+          {isRight &&
+            seenState !== undefined &&
+            (seenState ? (
+              <Eye className="h-2.5 w-2.5 text-muted-foreground/60" />
+            ) : (
+              <EyeOff className="h-2.5 w-2.5 text-muted-foreground/25" />
+            ))}
+        </div>
       </div>
     </div>
   );
@@ -137,12 +159,16 @@ export interface WaitingBubbleProps {
   questionId: string;
 }
 
-export function WaitingBubble({ isRight, waitingForMe, questionId }: WaitingBubbleProps) {
+export const WaitingBubble = memo(function WaitingBubble({
+  isRight,
+  waitingForMe,
+  questionId,
+}: WaitingBubbleProps) {
   const radius = isRight ? RIGHT_RADIUS : LEFT_RADIUS;
   return (
     <div className={`flex items-end gap-2 ${isRight ? "justify-end" : "justify-start"}`}>
       {!isRight && <div className="h-7 w-7 shrink-0" />}
-      <div className="max-w-[75%]">
+      <div className="max-w-[75%] animate-question-reveal">
         {waitingForMe ? (
           <Link
             to="/record"
@@ -163,4 +189,4 @@ export function WaitingBubble({ isRight, waitingForMe, questionId }: WaitingBubb
       </div>
     </div>
   );
-}
+});

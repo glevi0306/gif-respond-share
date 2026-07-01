@@ -149,7 +149,7 @@ function AnimatedPage() {
 // AppShell consumes both AuthProvider and AppProvider.
 // It handles the global loading state, language sync, route guard, and splash screen.
 function AppShell() {
-  const { session, profile, loading } = useAuth();
+  const { session, profile, loading, authReady } = useAuth();
   const { setLanguage } = useApp();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -163,17 +163,19 @@ function AppShell() {
     }
   }, []);
 
-  // ── Query invalidation on token change ───────────────────────
-  // Fires whenever the access token changes value — both on initial
-  // establishment (null → token) and on TOKEN_REFRESHED (old → new).
-  // This ensures queries that may have fired with an expired/stale token
-  // are refetched immediately once the fresh token is in place.
+  // ── Query cache management on token changes ──────────────────
+  // token → new token: invalidate so queries refetch with the fresh JWT
+  //         (handles mid-session TOKEN_REFRESHED rotations)
+  // token → null:      clear the entire cache on sign-out so stale data
+  //                    is never served when the next user signs in
   useEffect(() => {
     const token = session?.access_token ?? null;
     const prev = prevTokenRef.current;
     prevTokenRef.current = token;
     if (token && prev !== token) {
       queryClient.invalidateQueries();
+    } else if (!token && prev !== null) {
+      queryClient.clear();
     }
   }, [session?.access_token, queryClient]);
 
@@ -184,6 +186,8 @@ function AppShell() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const loadingRef = useRef(loading);
   loadingRef.current = loading;
+  const authReadyRef = useRef(authReady);
+  authReadyRef.current = authReady;
 
   useEffect(() => {
     let dismissed = false;
@@ -193,9 +197,11 @@ function AppShell() {
       setSplashFading(true);
       setTimeout(() => setSplashHidden(true), 220);
     };
-    // Show for at least 500ms so returning users don't see a flash
+    // Show for at least 500ms; also wait for authReady so returning users with
+    // an expired token don't see an empty home before TOKEN_REFRESHED fires.
+    // The 900ms hard cap ensures we never hang if the network is slow.
     const minTimer = setTimeout(() => {
-      if (!loadingRef.current) dismiss();
+      if (!loadingRef.current && authReadyRef.current) dismiss();
     }, 500);
     // Hard cap: never hang longer than 900ms total
     const maxTimer = setTimeout(dismiss, 900);

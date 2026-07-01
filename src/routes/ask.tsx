@@ -31,7 +31,7 @@ function AskPage() {
   const [friendId, setFriendId] = useState<string | null>(to ?? null);
   const [text, setText] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   const navigate = useNavigate();
   const sendQuestion = useSendQuestion();
 
@@ -48,7 +48,7 @@ function AskPage() {
       if (error) throw error;
       return (data ?? []) as SearchProfile[];
     },
-    enabled: !!user,
+    enabled: !!user && authReady,
   });
 
   const filtered = query.trim()

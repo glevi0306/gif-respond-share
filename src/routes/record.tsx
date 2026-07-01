@@ -103,7 +103,7 @@ function RecordPage() {
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
 
   // Friend list — only loaded when Send sheet is open (no questionId path)
   const { data: allProfiles = [] } = useQuery<ProfileRow[]>({
@@ -118,7 +118,7 @@ function RecordPage() {
       if (error) throw error;
       return (data ?? []) as ProfileRow[];
     },
-    enabled: !!user && !questionId && showSendSheet,
+    enabled: !!user && authReady && !questionId && showSendSheet,
   });
 
   // ── Measure camera container for SVG border ───────────────

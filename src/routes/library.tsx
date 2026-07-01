@@ -34,7 +34,7 @@ function getCategoryEmoji(key: string | null): string | null {
 }
 
 function LibraryPage() {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -64,7 +64,7 @@ function LibraryPage() {
       if (error) throw error;
       return (data ?? []) as GifRow[];
     },
-    enabled: !!user,
+    enabled: !!user && authReady,
   });
 
   const { data: allProfiles = [] } = useQuery<ProfileRow[]>({
@@ -79,7 +79,7 @@ function LibraryPage() {
       if (error) throw error;
       return (data ?? []) as ProfileRow[];
     },
-    enabled: !!user && showShareSheet,
+    enabled: !!user && authReady && showShareSheet,
   });
 
   // Apply category filter + sort — memoized so re-renders from unrelated state

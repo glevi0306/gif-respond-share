@@ -40,7 +40,7 @@ export function compactTime(iso: string): string {
 
 // All waiting questions the current user received, newest first
 export function useReceivedQuestions() {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   return useQuery({
     queryKey: ["questions", "received", user?.id],
     queryFn: async () => {
@@ -53,7 +53,7 @@ export function useReceivedQuestions() {
       if (error) throw error;
       return (data ?? []) as QuestionRow[];
     },
-    enabled: !!user,
+    enabled: !!user && authReady,
   });
 }
 
@@ -69,7 +69,7 @@ export function useQuestion(
       | ((query: { state: { data: unknown } }) => number | false | undefined);
   },
 ) {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   return useQuery({
     queryKey: ["question", id],
     queryFn: async () => {
@@ -81,7 +81,7 @@ export function useQuestion(
       if (error) throw error;
       return data as QuestionRow;
     },
-    enabled: !!user && !!id,
+    enabled: !!user && !!id && authReady,
     refetchInterval: opts?.refetchInterval,
   });
 }
@@ -138,7 +138,7 @@ export type DirectGifRow = {
 // Badge status is suppressed for conversations the current user has already opened
 // (tracked via conversation_reads).
 export function useChats() {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   return useQuery({
     queryKey: ["chats", user?.id],
     queryFn: async () => {
@@ -314,7 +314,7 @@ export function useChats() {
           questionId: c.questionId,
         }));
     },
-    enabled: !!user,
+    enabled: !!user && authReady,
     staleTime: 0,
     refetchInterval: 15_000,
   });
@@ -322,7 +322,7 @@ export function useChats() {
 
 // Full chronological thread between the current user and one partner
 export function useConversation(partnerId: string) {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   return useQuery({
     queryKey: ["conversation", user?.id, partnerId],
     queryFn: async () => {
@@ -339,7 +339,7 @@ export function useConversation(partnerId: string) {
       if (error) throw error;
       return (data ?? []) as unknown as ConvQuestion[];
     },
-    enabled: !!user && !!partnerId,
+    enabled: !!user && !!partnerId && authReady,
     staleTime: 0,
     refetchInterval: 10_000,
   });
@@ -348,7 +348,7 @@ export function useConversation(partnerId: string) {
 // Answers for a conversation — direct query avoids PostgREST embed + RLS nesting issues.
 // Returns a map: question_id → ConvAnswer for O(1) lookup in the thread render.
 export function useAnswersForConversation(partnerId: string) {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   return useQuery({
     queryKey: ["conv-answers", user?.id, partnerId],
     queryFn: async () => {
@@ -363,7 +363,7 @@ export function useAnswersForConversation(partnerId: string) {
       }
       return map;
     },
-    enabled: !!user && !!partnerId,
+    enabled: !!user && !!partnerId && authReady,
     staleTime: 0,
     refetchInterval: 10_000,
   });
@@ -372,7 +372,7 @@ export function useAnswersForConversation(partnerId: string) {
 // Reactions for a conversation — two-step query avoids PostgREST embed RLS issues.
 // Returns { byAnswerId, byDirectGifId } maps for O(1) lookup in the thread render.
 export function useReactionsForConversation(partnerId: string) {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   return useQuery({
     queryKey: ["conv-reactions", user?.id, partnerId],
     queryFn: async () => {
@@ -424,7 +424,7 @@ export function useReactionsForConversation(partnerId: string) {
 
       return { byAnswerId, byDirectGifId };
     },
-    enabled: !!user && !!partnerId,
+    enabled: !!user && !!partnerId && authReady,
     staleTime: 0,
     refetchInterval: 30_000,
   });
@@ -516,7 +516,7 @@ export function useSoftDeleteAnswer() {
 
 // Direct GIFs for a conversation — fetches all peer-to-peer GIFs between two users
 export function useDirectGifsForConversation(partnerId: string) {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   return useQuery({
     queryKey: ["conv-direct-gifs", user?.id, partnerId],
     queryFn: async () => {
@@ -531,7 +531,7 @@ export function useDirectGifsForConversation(partnerId: string) {
       if (error) throw error;
       return (data ?? []) as DirectGifRow[];
     },
-    enabled: !!user && !!partnerId,
+    enabled: !!user && !!partnerId && authReady,
     staleTime: 0,
     refetchInterval: 10_000,
   });
@@ -606,7 +606,7 @@ export function useMarkConversationRead() {
 // show open/closed eye seen indicators. Requires RLS to allow reading rows
 // where partner_id = auth.uid() (see migration notes).
 export function useConversationReadState(partnerId: string) {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   return useQuery({
     queryKey: ["conv-read-state", user?.id, partnerId],
     queryFn: async () => {
@@ -619,7 +619,7 @@ export function useConversationReadState(partnerId: string) {
       if (error) return null;
       return (data?.last_seen_at ?? null) as string | null;
     },
-    enabled: !!user && !!partnerId,
+    enabled: !!user && !!partnerId && authReady,
     staleTime: 0,
     refetchInterval: 30_000,
   });

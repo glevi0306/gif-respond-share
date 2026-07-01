@@ -18,7 +18,7 @@ export type FriendshipRow = {
 
 /** Incoming pending requests where the current user is the recipient. */
 export function useFriendRequests() {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   return useQuery({
     queryKey: ["friend-requests", user?.id],
     queryFn: async () => {
@@ -37,13 +37,13 @@ export function useFriendRequests() {
         return { ...row, sender } as FriendRequest;
       });
     },
-    enabled: !!user,
+    enabled: !!user && authReady,
   });
 }
 
 /** All friendships involving the current user (both directions), for building a status map. */
 export function useAllFriendships() {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   return useQuery({
     queryKey: ["all-friendships", user?.id],
     queryFn: async () => {
@@ -59,7 +59,7 @@ export function useAllFriendships() {
       ]);
       return [...(asSender ?? []), ...(asReceiver ?? [])] as FriendshipRow[];
     },
-    enabled: !!user,
+    enabled: !!user && authReady,
   });
 }
 

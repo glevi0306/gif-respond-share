@@ -29,7 +29,7 @@ type RawFriendRow = {
 };
 
 function useFriends() {
-  const { user } = useAuth();
+  const { user, authReady } = useAuth();
   return useQuery({
     queryKey: ["friends", user?.id],
     queryFn: async () => {
@@ -55,7 +55,7 @@ function useFriends() {
       ].filter((p): p is FriendProfile => p !== null);
       return profiles;
     },
-    enabled: !!user,
+    enabled: !!user && authReady,
   });
 }
 

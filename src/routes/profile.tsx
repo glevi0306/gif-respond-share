@@ -48,7 +48,7 @@ type StatsRow = { gif_count: number; questions_asked: number; questions_answered
 type RecentGif = { id: string; public_url: string };
 
 function ProfilePage() {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, authReady } = useAuth();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -84,7 +84,7 @@ function ProfilePage() {
         questions_answered: answeredRes.count ?? 0,
       };
     },
-    enabled: !!user,
+    enabled: !!user && authReady,
     staleTime: 60_000,
   });
 
@@ -100,7 +100,7 @@ function ProfilePage() {
       if (error) throw error;
       return (data ?? []) as RecentGif[];
     },
-    enabled: !!user,
+    enabled: !!user && authReady,
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

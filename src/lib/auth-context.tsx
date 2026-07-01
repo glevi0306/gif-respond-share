@@ -16,6 +16,7 @@ type AuthCtx = {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
+  authReady: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -36,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
     // Safety net: if the token refresh or network hangs on cold start, release
@@ -58,21 +60,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       if (!session) {
         setProfile(null);
+        setAuthReady(false);
         setLoading(false);
         return;
       }
-      // Always release the loading gate on INITIAL_SESSION regardless of token
-      // expiry. If the access token is expired, the Supabase client begins the
-      // refresh automatically; TOKEN_REFRESHED will fire shortly after and the
-      // __root.tsx invalidation effect will refetch all queries with the new
-      // token. Holding the gate here caused a 5 s stall on cold starts with
-      // expired tokens — routes never mounted, data never loaded.
+      // Release the loading gate immediately so the route guard can run.
       setLoading(false);
-      try {
-        const p = await loadProfile(session.user.id);
-        if (!cancelled) setProfile(p);
-      } catch {
-        // ignore
+      // authReady = true only when the token is confirmed fresh.
+      // INITIAL_SESSION with an expired token is the one case where we hold
+      // authReady=false until TOKEN_REFRESHED fires — this prevents protected
+      // queries from running with an expired token and caching empty results
+      // (Supabase RLS returns 200+empty rows, not 401, for expired tokens).
+      const nowSec = Math.floor(Date.now() / 1000);
+      const tokenFresh =
+        _event !== "INITIAL_SESSION" || session.expires_at == null || session.expires_at > nowSec;
+      setAuthReady(tokenFresh);
+      // Only load the profile once the token is confirmed fresh; TOKEN_REFRESHED
+      // will re-enter this handler and load it if the first event was stale.
+      if (tokenFresh) {
+        try {
+          const p = await loadProfile(session.user.id);
+          if (!cancelled) setProfile(p);
+        } catch {
+          // ignore
+        }
       }
     });
 
@@ -98,7 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   return (
-    <Ctx.Provider value={{ session, user, profile, loading, signOut, refreshProfile }}>
+    <Ctx.Provider value={{ session, user, profile, loading, authReady, signOut, refreshProfile }}>
       {children}
     </Ctx.Provider>
   );
